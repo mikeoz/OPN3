@@ -292,31 +292,37 @@ export type Database = {
           created_at: string
           from_member_id: string
           invitation_id: string
+          invite_link_id: string | null
           message: string | null
           responded_at: string | null
           scenario_id: string
           status: Database["public"]["Enums"]["invitation_status"]
-          to_member_id: string
+          to_email: string | null
+          to_member_id: string | null
         }
         Insert: {
           created_at?: string
           from_member_id: string
           invitation_id?: string
+          invite_link_id?: string | null
           message?: string | null
           responded_at?: string | null
           scenario_id: string
           status?: Database["public"]["Enums"]["invitation_status"]
-          to_member_id: string
+          to_email?: string | null
+          to_member_id?: string | null
         }
         Update: {
           created_at?: string
           from_member_id?: string
           invitation_id?: string
+          invite_link_id?: string | null
           message?: string | null
           responded_at?: string | null
           scenario_id?: string
           status?: Database["public"]["Enums"]["invitation_status"]
-          to_member_id?: string
+          to_email?: string | null
+          to_member_id?: string | null
         }
         Relationships: [
           {
@@ -325,6 +331,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tno_members"
             referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_invitations_invite_link_id_fkey"
+            columns: ["invite_link_id"]
+            isOneToOne: false
+            referencedRelation: "tno_invite_links"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "tno_invitations_scenario_id_fkey"
@@ -339,6 +352,83 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tno_members"
             referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      tno_invite_links: {
+        Row: {
+          claimed_by_member_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invitation_card_json: Json
+          invitation_id: string | null
+          invitee_email: string
+          invitee_name: string | null
+          inviter_member_id: string
+          revoked_at: string | null
+          scenario_id: string
+          status: Database["public"]["Enums"]["invite_link_status"]
+          token: string
+        }
+        Insert: {
+          claimed_by_member_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_card_json: Json
+          invitation_id?: string | null
+          invitee_email: string
+          invitee_name?: string | null
+          inviter_member_id: string
+          revoked_at?: string | null
+          scenario_id: string
+          status?: Database["public"]["Enums"]["invite_link_status"]
+          token?: string
+        }
+        Update: {
+          claimed_by_member_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitation_card_json?: Json
+          invitation_id?: string | null
+          invitee_email?: string
+          invitee_name?: string | null
+          inviter_member_id?: string
+          revoked_at?: string | null
+          scenario_id?: string
+          status?: Database["public"]["Enums"]["invite_link_status"]
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_invite_links_claimed_by_member_id_fkey"
+            columns: ["claimed_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_invite_links_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "tno_invitations"
+            referencedColumns: ["invitation_id"]
+          },
+          {
+            foreignKeyName: "tno_invite_links_inviter_member_id_fkey"
+            columns: ["inviter_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_invite_links_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "tno_sharing_scenarios"
+            referencedColumns: ["scenario_id"]
           },
         ]
       }
@@ -368,6 +458,38 @@ export type Database = {
           verification_level?: Database["public"]["Enums"]["verification_level"]
         }
         Relationships: []
+      }
+      tno_personal_cards: {
+        Row: {
+          card_json: Json
+          created_at: string
+          id: string
+          member_id: string
+          updated_at: string
+        }
+        Insert: {
+          card_json: Json
+          created_at?: string
+          id?: string
+          member_id: string
+          updated_at?: string
+        }
+        Update: {
+          card_json?: Json
+          created_at?: string
+          id?: string
+          member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_personal_cards_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: true
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
       }
       tno_relationships: {
         Row: {
@@ -545,7 +667,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      tno_accept_invite: {
+        Args: { p_personal_card_json: Json; p_token: string }
+        Returns: string
+      }
+      tno_claim_invite: { Args: { p_token: string }; Returns: Json }
+      tno_revoke_invite: {
+        Args: { p_invite_link_id: string; p_reason?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       acceptance_decision: "accepted" | "rejected"
@@ -556,6 +686,11 @@ export type Database = {
         | "invitation.rejected"
         | "relationship.created"
         | "relationship.revoked"
+        | "invite.created"
+        | "invite.claimed"
+        | "invite.revoked"
+        | "personal_card.created"
+        | "personal_card.updated"
       card_share_status: "offered" | "accepted" | "revoked"
       card_status: "active" | "deprecated"
       card_type: "standard"
@@ -564,6 +699,12 @@ export type Database = {
         | "accepted"
         | "rejected"
         | "cancelled"
+        | "expired"
+      invite_link_status:
+        | "pending"
+        | "claimed"
+        | "accepted"
+        | "revoked"
         | "expired"
       member_status: "active" | "disabled"
       relationship_status: "active" | "terminated"
@@ -704,6 +845,11 @@ export const Constants = {
         "invitation.rejected",
         "relationship.created",
         "relationship.revoked",
+        "invite.created",
+        "invite.claimed",
+        "invite.revoked",
+        "personal_card.created",
+        "personal_card.updated",
       ],
       card_share_status: ["offered", "accepted", "revoked"],
       card_status: ["active", "deprecated"],
@@ -713,6 +859,13 @@ export const Constants = {
         "accepted",
         "rejected",
         "cancelled",
+        "expired",
+      ],
+      invite_link_status: [
+        "pending",
+        "claimed",
+        "accepted",
+        "revoked",
         "expired",
       ],
       member_status: ["active", "disabled"],

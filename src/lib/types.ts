@@ -9,13 +9,19 @@ export type InvitationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled'
 export type CardShareStatus = 'offered' | 'accepted' | 'revoked';
 export type AcceptanceDecision = 'accepted' | 'rejected';
 export type RelationshipStatus = 'active' | 'terminated';
+export type InviteLinkStatus = 'pending' | 'claimed' | 'accepted' | 'revoked' | 'expired';
 export type AuditEventType = 
   | 'member.created'
   | 'invitation.sent'
   | 'invitation.accepted'
   | 'invitation.rejected'
   | 'relationship.created'
-  | 'relationship.revoked';
+  | 'relationship.revoked'
+  | 'invite.created'
+  | 'invite.claimed'
+  | 'invite.revoked'
+  | 'personal_card.created'
+  | 'personal_card.updated';
 
 export interface Member {
   member_id: string;
@@ -50,12 +56,14 @@ export interface SharingScenario {
 export interface Invitation {
   invitation_id: string;
   from_member_id: string;
-  to_member_id: string;
+  to_member_id: string | null;
+  to_email: string | null;
   scenario_id: string;
   message: string | null;
   status: InvitationStatus;
   created_at: string;
   responded_at: string | null;
+  invite_link_id: string | null;
   from_member?: Member;
   to_member?: Member;
   scenario?: SharingScenario;
@@ -106,6 +114,39 @@ export interface Revocation {
   revoked_by_member_id: string;
   reason: string | null;
   revoked_at: string;
+}
+
+export interface InviteLink {
+  id: string;
+  token: string;
+  inviter_member_id: string;
+  invitee_email: string;
+  invitee_name: string | null;
+  scenario_id: string;
+  invitation_card_json: PersonalCardData;
+  status: InviteLinkStatus;
+  claimed_by_member_id: string | null;
+  invitation_id: string | null;
+  created_at: string;
+  expires_at: string;
+  revoked_at: string | null;
+  scenario?: SharingScenario;
+}
+
+export interface PersonalCardData {
+  name: string;
+  email: string;
+  phone?: string;
+  organization?: string;
+  title?: string;
+}
+
+export interface PersonalCard {
+  id: string;
+  member_id: string;
+  card_json: PersonalCardData;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AuditEvent {

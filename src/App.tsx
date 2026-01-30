@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Home from "./pages/Home";
 import Invite from "./pages/Invite";
 import Inbox from "./pages/Inbox";
+import Join from "./pages/Join";
 import RelationshipDetail from "./pages/RelationshipDetail";
 import Audit from "./pages/Audit";
 import NotFound from "./pages/NotFound";
@@ -77,6 +78,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       />
+      <Route path="/join" element={<Join />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

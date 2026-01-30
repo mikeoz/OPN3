@@ -3,27 +3,41 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CardBadge } from '@/components/trust/CardBadge';
 import { supabase } from '@/integrations/supabase/client';
-import { Member, SharingScenario, Card as CardType } from '@/lib/types';
+import { Member, SharingScenario, Card as CardType, PersonalCardData } from '@/lib/types';
 import { toast } from 'sonner';
-import { Send, Loader2, Users, ChevronRight } from 'lucide-react';
+import { Send, Loader2, Users, ChevronRight, Copy, Mail, ExternalLink } from 'lucide-react';
 
 export default function Invite() {
-  const { user } = useAuth();
+  const { user, member } = useAuth();
   const navigate = useNavigate();
   
   const [members, setMembers] = useState<Member[]>([]);
   const [scenarios, setScenarios] = useState<SharingScenario[]>([]);
   const [scenarioCards, setScenarioCards] = useState<Record<string, CardType[]>>({});
   
+  // Member invite state
   const [selectedMember, setSelectedMember] = useState<string>('');
   const [selectedScenario, setSelectedScenario] = useState<string>('');
   const [message, setMessage] = useState('');
+  
+  // Email invite state
+  const [inviteeEmail, setInviteeEmail] = useState('');
+  const [inviteeName, setInviteeName] = useState('');
+  const [inviteePhone, setInviteePhone] = useState('');
+  const [inviteeOrg, setInviteeOrg] = useState('');
+  const [inviteeTitle, setInviteeTitle] = useState('');
+  const [emailScenario, setEmailScenario] = useState<string>('');
+  const [emailMessage, setEmailMessage] = useState('');
+  const [generatedLink, setGeneratedLink] = useState<string>('');
+  
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
@@ -74,7 +88,7 @@ export default function Invite() {
     setLoading(false);
   };
 
-  const handleSend = async () => {
+  const handleSendMember = async () => {
     if (!user || !selectedMember || !selectedScenario) {
       toast.error('Please select a recipient and scenario');
       return;
@@ -141,8 +155,143 @@ export default function Invite() {
     }
   };
 
+  const handleSendEmail = async () => {
+    if (!user || !inviteeEmail || !emailScenario) {
+      toast.error('Please enter an email and select a scenario');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(inviteeEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setSending(true);
+
+    try {
+      const invitationCardJson: PersonalCardData = {
+        name: inviteeName || '',
+        email: inviteeEmail,
+        phone: inviteePhone || undefined,
+        organization: inviteeOrg || undefined,
+        title: inviteeTitle || undefined,
+      };
+
+      // Create invite link - using type assertion due to types not yet regenerated
+      const { data: inviteLink, error: linkError } = await (supabase
+        .from('tno_invite_links' as 'tno_members')
+        .insert({
+          inviter_member_id: user.id,
+          invitee_email: inviteeEmail,
+          invitee_name: inviteeName || null,
+          scenario_id: emailScenario,
+          invitation_card_json: invitationCardJson,
+        } as never)
+        .select()
+        .single()) as { data: { id: string; token: string; invitation_id: string | null } | null; error: Error | null };
+
+      if (linkError) throw linkError;
+
+      // Create invitation (with to_email, without to_member_id)
+      const { data: invitation, error: invError } = await supabase
+        .from('tno_invitations')
+        .insert({
+          from_member_id: user.id,
+          to_email: inviteeEmail,
+          scenario_id: emailScenario,
+          message: emailMessage || null,
+          invite_link_id: inviteLink.id,
+        })
+        .select()
+        .single();
+
+      if (invError) throw invError;
+
+      // Update invite link with invitation_id
+      await supabase
+        .from('tno_invite_links')
+        .update({ invitation_id: invitation.invitation_id })
+        .eq('id', inviteLink.id);
+
+      // Create card share (to_member_id will be set when claimed)
+      const { data: cardShare, error: shareError } = await supabase
+        .from('tno_card_shares')
+        .insert({
+          invitation_id: invitation.invitation_id,
+          from_member_id: user.id,
+          to_member_id: user.id, // Temporarily set to inviter, will be updated on claim
+          scenario_id: emailScenario,
+        })
+        .select()
+        .single();
+
+      if (shareError) throw shareError;
+
+      // Copy cards from scenario to card share items
+      const cards = scenarioCards[emailScenario] || [];
+      if (cards.length > 0) {
+        const shareItems = cards.map((card, index) => ({
+          card_share_id: cardShare.card_share_id,
+          card_id: card.card_id,
+          position: index + 1,
+        }));
+
+        await supabase.from('tno_card_share_items').insert(shareItems);
+      }
+
+      // Create audit event
+      await supabase.from('tno_audit_events').insert({
+        event_type: 'invite.created',
+        actor_member_id: user.id,
+        metadata: { 
+          invite_link_id: inviteLink.id,
+          invitee_email: inviteeEmail,
+        },
+      });
+
+      // Generate the join link
+      const joinLink = `${window.location.origin}/join?token=${inviteLink.token}`;
+      setGeneratedLink(joinLink);
+
+      toast.success('Invite link created!');
+    } catch (error) {
+      console.error('Error creating invite:', error);
+      toast.error('Failed to create invite link');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(generatedLink);
+      toast.success('Link copied to clipboard!');
+    } catch {
+      toast.error('Failed to copy link');
+    }
+  };
+
+  const handleOpenAsInvitee = () => {
+    window.open(generatedLink, '_blank');
+  };
+
+  const handleResetEmailForm = () => {
+    setInviteeEmail('');
+    setInviteeName('');
+    setInviteePhone('');
+    setInviteeOrg('');
+    setInviteeTitle('');
+    setEmailScenario('');
+    setEmailMessage('');
+    setGeneratedLink('');
+  };
+
   const selectedScenarioData = scenarios.find(s => s.scenario_id === selectedScenario);
   const selectedCards = selectedScenario ? scenarioCards[selectedScenario] || [] : [];
+  const emailScenarioData = scenarios.find(s => s.scenario_id === emailScenario);
+  const emailCards = emailScenario ? scenarioCards[emailScenario] || [] : [];
 
   if (loading) {
     return (
@@ -161,133 +310,331 @@ export default function Invite() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Send Invitation</h1>
           <p className="text-muted-foreground mt-1">
-            Invite a member to establish a trusted relationship
+            Invite someone to establish a trusted relationship
           </p>
         </div>
 
-        {members.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h2 className="text-lg font-semibold mb-2">No other members yet</h2>
-              <p className="text-muted-foreground">
-                You're the only member. Invite others to join Opn3 first.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-6">
-            {/* Step 1: Select Recipient */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                  Select Recipient
-                </CardTitle>
-                <CardDescription>Choose who you want to invite</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Select value={selectedMember} onValueChange={setSelectedMember}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choose a member..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {members.map((member) => (
-                      <SelectItem key={member.member_id} value={member.member_id}>
-                        {member.handle || member.email}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+        <Tabs defaultValue="member" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="member" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Invite Member
+            </TabsTrigger>
+            <TabsTrigger value="email" className="flex items-center gap-2">
+              <Mail className="h-4 w-4" />
+              Invite by Email
+            </TabsTrigger>
+          </TabsList>
 
-            {/* Step 2: Select Scenario */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-                  Select Sharing Scenario
-                </CardTitle>
-                <CardDescription>What would you like to share?</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-3">
-                  {scenarios.map((scenario) => (
-                    <button
-                      key={scenario.scenario_id}
-                      type="button"
-                      onClick={() => setSelectedScenario(scenario.scenario_id)}
-                      className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                        selectedScenario === scenario.scenario_id
-                          ? 'border-primary bg-primary/5'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{scenario.title}</p>
-                          <p className="text-sm text-muted-foreground">{scenario.description}</p>
-                        </div>
-                        <ChevronRight className={`h-5 w-5 transition-transform ${
-                          selectedScenario === scenario.scenario_id ? 'rotate-90 text-primary' : 'text-muted-foreground'
-                        }`} />
-                      </div>
-                    </button>
-                  ))}
-                </div>
+          {/* Member Invite Tab */}
+          <TabsContent value="member" className="space-y-6">
+            {members.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h2 className="text-lg font-semibold mb-2">No other members yet</h2>
+                  <p className="text-muted-foreground">
+                    Use the "Invite by Email" tab to invite new people to join.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {/* Step 1: Select Recipient */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                      Select Recipient
+                    </CardTitle>
+                    <CardDescription>Choose who you want to invite</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Select value={selectedMember} onValueChange={setSelectedMember}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a member..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {members.map((member) => (
+                          <SelectItem key={member.member_id} value={member.member_id}>
+                            {member.handle || member.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </CardContent>
+                </Card>
 
-                {/* Show cards for selected scenario */}
-                {selectedScenarioData && (
-                  <div className="pt-4 border-t">
-                    <p className="text-sm font-medium mb-3">CARDs in this scenario:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCards.map((card) => (
-                        <CardBadge key={card.card_id} card={card} />
+                {/* Step 2: Select Scenario */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+                      Select Sharing Scenario
+                    </CardTitle>
+                    <CardDescription>What would you like to share?</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3">
+                      {scenarios.map((scenario) => (
+                        <button
+                          key={scenario.scenario_id}
+                          type="button"
+                          onClick={() => setSelectedScenario(scenario.scenario_id)}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                            selectedScenario === scenario.scenario_id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{scenario.title}</p>
+                              <p className="text-sm text-muted-foreground">{scenario.description}</p>
+                            </div>
+                            <ChevronRight className={`h-5 w-5 transition-transform ${
+                              selectedScenario === scenario.scenario_id ? 'rotate-90 text-primary' : 'text-muted-foreground'
+                            }`} />
+                          </div>
+                        </button>
                       ))}
                     </div>
+
+                    {selectedScenarioData && (
+                      <div className="pt-4 border-t">
+                        <p className="text-sm font-medium mb-3">CARDs in this scenario:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {selectedCards.map((card) => (
+                            <CardBadge key={card.card_id} card={card} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Step 3: Optional Message */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">3</span>
+                      Add a Message
+                      <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      placeholder="Add a personal message to your invitation..."
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">{message.length}/500</p>
+                  </CardContent>
+                </Card>
+
+                {/* Send Button */}
+                <Button 
+                  size="lg" 
+                  className="w-full"
+                  onClick={handleSendMember}
+                  disabled={!selectedMember || !selectedScenario || sending}
+                >
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-2" />
+                  )}
+                  Send Invitation
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Email Invite Tab */}
+          <TabsContent value="email" className="space-y-6">
+            {generatedLink ? (
+              // Show generated link
+              <Card className="border-primary">
+                <CardHeader>
+                  <CardTitle className="text-lg text-primary">Invite Link Ready!</CardTitle>
+                  <CardDescription>
+                    Share this link with {inviteeName || inviteeEmail} to invite them to join
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="p-3 bg-muted rounded-lg break-all font-mono text-sm">
+                    {generatedLink}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <div className="flex gap-2">
+                    <Button onClick={handleCopyLink} className="flex-1">
+                      <Copy className="h-4 w-4 mr-2" />
+                      Copy Link
+                    </Button>
+                    <Button variant="outline" onClick={handleOpenAsInvitee}>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open (Test)
+                    </Button>
+                  </div>
+                  <Button variant="ghost" onClick={handleResetEmailForm} className="w-full">
+                    Create Another Invite
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {/* Step 1: Invitee Info */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
+                      Invitee Information
+                    </CardTitle>
+                    <CardDescription>Enter the details of the person you're inviting</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-4">
+                      <div className="grid gap-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="person@example.com"
+                          value={inviteeEmail}
+                          onChange={(e) => setInviteeEmail(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="name">Name</Label>
+                        <Input
+                          id="name"
+                          placeholder="Jane Smith"
+                          value={inviteeName}
+                          onChange={(e) => setInviteeName(e.target.value)}
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="org">Organization</Label>
+                          <Input
+                            id="org"
+                            placeholder="Acme Corp"
+                            value={inviteeOrg}
+                            onChange={(e) => setInviteeOrg(e.target.value)}
+                          />
+                        </div>
+                        <div className="grid gap-2">
+                          <Label htmlFor="title">Title</Label>
+                          <Input
+                            id="title"
+                            placeholder="Product Manager"
+                            value={inviteeTitle}
+                            onChange={(e) => setInviteeTitle(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          placeholder="+1 (555) 123-4567"
+                          value={inviteePhone}
+                          onChange={(e) => setInviteePhone(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
 
-            {/* Step 3: Optional Message */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">3</span>
-                  Add a Message
-                  <span className="text-xs font-normal text-muted-foreground">(optional)</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Textarea
-                  placeholder="Add a personal message to your invitation..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  maxLength={500}
-                  rows={3}
-                />
-                <p className="text-xs text-muted-foreground mt-2">{message.length}/500</p>
-              </CardContent>
-            </Card>
+                {/* Step 2: Select Scenario */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
+                      Select Sharing Scenario
+                    </CardTitle>
+                    <CardDescription>What would you like to share?</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3">
+                      {scenarios.map((scenario) => (
+                        <button
+                          key={scenario.scenario_id}
+                          type="button"
+                          onClick={() => setEmailScenario(scenario.scenario_id)}
+                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                            emailScenario === scenario.scenario_id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{scenario.title}</p>
+                              <p className="text-sm text-muted-foreground">{scenario.description}</p>
+                            </div>
+                            <ChevronRight className={`h-5 w-5 transition-transform ${
+                              emailScenario === scenario.scenario_id ? 'rotate-90 text-primary' : 'text-muted-foreground'
+                            }`} />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
 
-            {/* Send Button */}
-            <Button 
-              size="lg" 
-              className="w-full"
-              onClick={handleSend}
-              disabled={!selectedMember || !selectedScenario || sending}
-            >
-              {sending ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4 mr-2" />
-              )}
-              Send Invitation
-            </Button>
-          </div>
-        )}
+                    {emailScenarioData && (
+                      <div className="pt-4 border-t">
+                        <p className="text-sm font-medium mb-3">CARDs in this scenario:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {emailCards.map((card) => (
+                            <CardBadge key={card.card_id} card={card} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Step 3: Optional Message */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">3</span>
+                      Add a Message
+                      <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Textarea
+                      placeholder="Add a personal message to your invitation..."
+                      value={emailMessage}
+                      onChange={(e) => setEmailMessage(e.target.value)}
+                      maxLength={500}
+                      rows={3}
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">{emailMessage.length}/500</p>
+                  </CardContent>
+                </Card>
+
+                {/* Generate Link Button */}
+                <Button 
+                  size="lg" 
+                  className="w-full"
+                  onClick={handleSendEmail}
+                  disabled={!inviteeEmail || !emailScenario || sending}
+                >
+                  {sending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4 mr-2" />
+                  )}
+                  Generate Invite Link
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
