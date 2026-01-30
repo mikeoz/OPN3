@@ -1,0 +1,724 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.1"
+  }
+  public: {
+    Tables: {
+      tno_acceptances: {
+        Row: {
+          acceptance_id: string
+          card_share_id: string
+          decided_at: string
+          decision: Database["public"]["Enums"]["acceptance_decision"]
+          from_member_id: string
+          invitation_id: string
+          note: string | null
+          to_member_id: string
+        }
+        Insert: {
+          acceptance_id?: string
+          card_share_id: string
+          decided_at?: string
+          decision: Database["public"]["Enums"]["acceptance_decision"]
+          from_member_id: string
+          invitation_id: string
+          note?: string | null
+          to_member_id: string
+        }
+        Update: {
+          acceptance_id?: string
+          card_share_id?: string
+          decided_at?: string
+          decision?: Database["public"]["Enums"]["acceptance_decision"]
+          from_member_id?: string
+          invitation_id?: string
+          note?: string | null
+          to_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_acceptances_card_share_id_fkey"
+            columns: ["card_share_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_shares"
+            referencedColumns: ["card_share_id"]
+          },
+          {
+            foreignKeyName: "tno_acceptances_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_acceptances_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "tno_invitations"
+            referencedColumns: ["invitation_id"]
+          },
+          {
+            foreignKeyName: "tno_acceptances_to_member_id_fkey"
+            columns: ["to_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      tno_audit_events: {
+        Row: {
+          actor_member_id: string | null
+          audit_id: string
+          card_share_id: string | null
+          created_at: string
+          event_type: Database["public"]["Enums"]["audit_event_type"]
+          invitation_id: string | null
+          metadata: Json | null
+          relationship_id: string | null
+          subject_member_id: string | null
+        }
+        Insert: {
+          actor_member_id?: string | null
+          audit_id?: string
+          card_share_id?: string | null
+          created_at?: string
+          event_type: Database["public"]["Enums"]["audit_event_type"]
+          invitation_id?: string | null
+          metadata?: Json | null
+          relationship_id?: string | null
+          subject_member_id?: string | null
+        }
+        Update: {
+          actor_member_id?: string | null
+          audit_id?: string
+          card_share_id?: string | null
+          created_at?: string
+          event_type?: Database["public"]["Enums"]["audit_event_type"]
+          invitation_id?: string | null
+          metadata?: Json | null
+          relationship_id?: string | null
+          subject_member_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_audit_events_actor_member_id_fkey"
+            columns: ["actor_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_audit_events_card_share_id_fkey"
+            columns: ["card_share_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_shares"
+            referencedColumns: ["card_share_id"]
+          },
+          {
+            foreignKeyName: "tno_audit_events_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "tno_invitations"
+            referencedColumns: ["invitation_id"]
+          },
+          {
+            foreignKeyName: "tno_audit_events_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "tno_relationships"
+            referencedColumns: ["relationship_id"]
+          },
+          {
+            foreignKeyName: "tno_audit_events_subject_member_id_fkey"
+            columns: ["subject_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      tno_card_catalog: {
+        Row: {
+          card_id: string
+          card_key: string
+          card_type: Database["public"]["Enums"]["card_type"]
+          created_at: string
+          issuer_member_id: string | null
+          status: Database["public"]["Enums"]["card_status"]
+          summary: string
+          title: string
+        }
+        Insert: {
+          card_id?: string
+          card_key: string
+          card_type?: Database["public"]["Enums"]["card_type"]
+          created_at?: string
+          issuer_member_id?: string | null
+          status?: Database["public"]["Enums"]["card_status"]
+          summary: string
+          title: string
+        }
+        Update: {
+          card_id?: string
+          card_key?: string
+          card_type?: Database["public"]["Enums"]["card_type"]
+          created_at?: string
+          issuer_member_id?: string | null
+          status?: Database["public"]["Enums"]["card_status"]
+          summary?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_card_catalog_issuer_member_id_fkey"
+            columns: ["issuer_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      tno_card_share_items: {
+        Row: {
+          card_id: string
+          card_share_id: string
+          position: number
+        }
+        Insert: {
+          card_id: string
+          card_share_id: string
+          position?: number
+        }
+        Update: {
+          card_id?: string
+          card_share_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_card_share_items_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_catalog"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "tno_card_share_items_card_share_id_fkey"
+            columns: ["card_share_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_shares"
+            referencedColumns: ["card_share_id"]
+          },
+        ]
+      }
+      tno_card_shares: {
+        Row: {
+          accepted_at: string | null
+          card_share_id: string
+          created_at: string
+          from_member_id: string
+          invitation_id: string
+          revoked_at: string | null
+          scenario_id: string
+          status: Database["public"]["Enums"]["card_share_status"]
+          to_member_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          card_share_id?: string
+          created_at?: string
+          from_member_id: string
+          invitation_id: string
+          revoked_at?: string | null
+          scenario_id: string
+          status?: Database["public"]["Enums"]["card_share_status"]
+          to_member_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          card_share_id?: string
+          created_at?: string
+          from_member_id?: string
+          invitation_id?: string
+          revoked_at?: string | null
+          scenario_id?: string
+          status?: Database["public"]["Enums"]["card_share_status"]
+          to_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_card_shares_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_card_shares_invitation_id_fkey"
+            columns: ["invitation_id"]
+            isOneToOne: false
+            referencedRelation: "tno_invitations"
+            referencedColumns: ["invitation_id"]
+          },
+          {
+            foreignKeyName: "tno_card_shares_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "tno_sharing_scenarios"
+            referencedColumns: ["scenario_id"]
+          },
+          {
+            foreignKeyName: "tno_card_shares_to_member_id_fkey"
+            columns: ["to_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      tno_invitations: {
+        Row: {
+          created_at: string
+          from_member_id: string
+          invitation_id: string
+          message: string | null
+          responded_at: string | null
+          scenario_id: string
+          status: Database["public"]["Enums"]["invitation_status"]
+          to_member_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_member_id: string
+          invitation_id?: string
+          message?: string | null
+          responded_at?: string | null
+          scenario_id: string
+          status?: Database["public"]["Enums"]["invitation_status"]
+          to_member_id: string
+        }
+        Update: {
+          created_at?: string
+          from_member_id?: string
+          invitation_id?: string
+          message?: string | null
+          responded_at?: string | null
+          scenario_id?: string
+          status?: Database["public"]["Enums"]["invitation_status"]
+          to_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_invitations_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_invitations_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "tno_sharing_scenarios"
+            referencedColumns: ["scenario_id"]
+          },
+          {
+            foreignKeyName: "tno_invitations_to_member_id_fkey"
+            columns: ["to_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      tno_members: {
+        Row: {
+          created_at: string
+          email: string
+          handle: string | null
+          member_id: string
+          status: Database["public"]["Enums"]["member_status"]
+          verification_level: Database["public"]["Enums"]["verification_level"]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          handle?: string | null
+          member_id: string
+          status?: Database["public"]["Enums"]["member_status"]
+          verification_level?: Database["public"]["Enums"]["verification_level"]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          handle?: string | null
+          member_id?: string
+          status?: Database["public"]["Enums"]["member_status"]
+          verification_level?: Database["public"]["Enums"]["verification_level"]
+        }
+        Relationships: []
+      }
+      tno_relationships: {
+        Row: {
+          created_at: string
+          created_from_card_share_id: string
+          member_a_id: string
+          member_b_id: string
+          relationship_id: string
+          scenario_id: string
+          status: Database["public"]["Enums"]["relationship_status"]
+          terminated_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_from_card_share_id: string
+          member_a_id: string
+          member_b_id: string
+          relationship_id?: string
+          scenario_id: string
+          status?: Database["public"]["Enums"]["relationship_status"]
+          terminated_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_from_card_share_id?: string
+          member_a_id?: string
+          member_b_id?: string
+          relationship_id?: string
+          scenario_id?: string
+          status?: Database["public"]["Enums"]["relationship_status"]
+          terminated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_relationships_created_from_card_share_id_fkey"
+            columns: ["created_from_card_share_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_shares"
+            referencedColumns: ["card_share_id"]
+          },
+          {
+            foreignKeyName: "tno_relationships_member_a_id_fkey"
+            columns: ["member_a_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_relationships_member_b_id_fkey"
+            columns: ["member_b_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_relationships_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "tno_sharing_scenarios"
+            referencedColumns: ["scenario_id"]
+          },
+        ]
+      }
+      tno_revocations: {
+        Row: {
+          card_share_id: string
+          reason: string | null
+          relationship_id: string
+          revocation_id: string
+          revoked_at: string
+          revoked_by_member_id: string
+        }
+        Insert: {
+          card_share_id: string
+          reason?: string | null
+          relationship_id: string
+          revocation_id?: string
+          revoked_at?: string
+          revoked_by_member_id: string
+        }
+        Update: {
+          card_share_id?: string
+          reason?: string | null
+          relationship_id?: string
+          revocation_id?: string
+          revoked_at?: string
+          revoked_by_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_revocations_card_share_id_fkey"
+            columns: ["card_share_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_shares"
+            referencedColumns: ["card_share_id"]
+          },
+          {
+            foreignKeyName: "tno_revocations_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "tno_relationships"
+            referencedColumns: ["relationship_id"]
+          },
+          {
+            foreignKeyName: "tno_revocations_revoked_by_member_id_fkey"
+            columns: ["revoked_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
+      tno_scenario_cards: {
+        Row: {
+          card_id: string
+          position: number
+          scenario_id: string
+        }
+        Insert: {
+          card_id: string
+          position?: number
+          scenario_id: string
+        }
+        Update: {
+          card_id?: string
+          position?: number
+          scenario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_scenario_cards_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_catalog"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "tno_scenario_cards_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "tno_sharing_scenarios"
+            referencedColumns: ["scenario_id"]
+          },
+        ]
+      }
+      tno_sharing_scenarios: {
+        Row: {
+          created_at: string
+          description: string
+          scenario_id: string
+          scenario_key: string
+          status: Database["public"]["Enums"]["scenario_status"]
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          scenario_id?: string
+          scenario_key: string
+          status?: Database["public"]["Enums"]["scenario_status"]
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          scenario_id?: string
+          scenario_key?: string
+          status?: Database["public"]["Enums"]["scenario_status"]
+          title?: string
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      acceptance_decision: "accepted" | "rejected"
+      audit_event_type:
+        | "member.created"
+        | "invitation.sent"
+        | "invitation.accepted"
+        | "invitation.rejected"
+        | "relationship.created"
+        | "relationship.revoked"
+      card_share_status: "offered" | "accepted" | "revoked"
+      card_status: "active" | "deprecated"
+      card_type: "standard"
+      invitation_status:
+        | "pending"
+        | "accepted"
+        | "rejected"
+        | "cancelled"
+        | "expired"
+      member_status: "active" | "disabled"
+      relationship_status: "active" | "terminated"
+      scenario_status: "active" | "deprecated"
+      verification_level: "assumed_verified"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      acceptance_decision: ["accepted", "rejected"],
+      audit_event_type: [
+        "member.created",
+        "invitation.sent",
+        "invitation.accepted",
+        "invitation.rejected",
+        "relationship.created",
+        "relationship.revoked",
+      ],
+      card_share_status: ["offered", "accepted", "revoked"],
+      card_status: ["active", "deprecated"],
+      card_type: ["standard"],
+      invitation_status: [
+        "pending",
+        "accepted",
+        "rejected",
+        "cancelled",
+        "expired",
+      ],
+      member_status: ["active", "disabled"],
+      relationship_status: ["active", "terminated"],
+      scenario_status: ["active", "deprecated"],
+      verification_level: ["assumed_verified"],
+    },
+  },
+} as const
