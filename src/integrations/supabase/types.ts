@@ -366,6 +366,7 @@ export type Database = {
           invitee_email: string
           invitee_name: string | null
           inviter_member_id: string
+          relationship_card_json: Json | null
           revoked_at: string | null
           scenario_id: string
           status: Database["public"]["Enums"]["invite_link_status"]
@@ -381,6 +382,7 @@ export type Database = {
           invitee_email: string
           invitee_name?: string | null
           inviter_member_id: string
+          relationship_card_json?: Json | null
           revoked_at?: string | null
           scenario_id: string
           status?: Database["public"]["Enums"]["invite_link_status"]
@@ -396,6 +398,7 @@ export type Database = {
           invitee_email?: string
           invitee_name?: string | null
           inviter_member_id?: string
+          relationship_card_json?: Json | null
           revoked_at?: string | null
           scenario_id?: string
           status?: Database["public"]["Enums"]["invite_link_status"]
@@ -495,6 +498,8 @@ export type Database = {
         Row: {
           created_at: string
           created_from_card_share_id: string
+          invitee_relationship_label: string | null
+          inviter_relationship_label: string | null
           member_a_id: string
           member_b_id: string
           relationship_id: string
@@ -505,6 +510,8 @@ export type Database = {
         Insert: {
           created_at?: string
           created_from_card_share_id: string
+          invitee_relationship_label?: string | null
+          inviter_relationship_label?: string | null
           member_a_id: string
           member_b_id: string
           relationship_id?: string
@@ -515,6 +522,8 @@ export type Database = {
         Update: {
           created_at?: string
           created_from_card_share_id?: string
+          invitee_relationship_label?: string | null
+          inviter_relationship_label?: string | null
           member_a_id?: string
           member_b_id?: string
           relationship_id?: string
@@ -691,6 +700,8 @@ export type Database = {
         | "invite.revoked"
         | "personal_card.created"
         | "personal_card.updated"
+        | "relationship_card.proposed"
+        | "relationship_card.activated"
       card_share_status: "offered" | "accepted" | "revoked"
       card_status: "active" | "deprecated"
       card_type: "standard"
@@ -850,6 +861,8 @@ export const Constants = {
         "invite.revoked",
         "personal_card.created",
         "personal_card.updated",
+        "relationship_card.proposed",
+        "relationship_card.activated",
       ],
       card_share_status: ["offered", "accepted", "revoked"],
       card_status: ["active", "deprecated"],

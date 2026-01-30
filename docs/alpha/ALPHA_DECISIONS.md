@@ -100,6 +100,22 @@ Consider email magic-link authentication or signed, time-bound invitation claims
 
 ---
 
+## Decision A-005: Relationship CARDs are minimal and preset-based
+
+**Context**  
+Alpha requires demonstrating asymmetric relationships without a full ontology or validation.
+
+**Alpha Choice**  
+Relationship CARDs contain only two labels (inviter_label and invitee_label) with preset options. No role validation, family tree inference, or permission enforcement occurs.
+
+**Implication**  
+Relationships are declarative only. The system records the declared relationship but does not validate correctness or enforce derived permissions.
+
+**MVP Transition**  
+Extend Relationship CARDs with structured types, optional validation, and permission inference based on relationship type.
+
+---
+
 ## How to Use This Document
 
 - Each new Alpha shortcut must be recorded as a new Decision (A-005, A-006, …)
@@ -112,4 +128,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1
+End of v0.1 + OPN3.008

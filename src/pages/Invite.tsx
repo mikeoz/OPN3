@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CardBadge } from '@/components/trust/CardBadge';
+import { RelationshipCardForm, buildRelationshipCardJson } from '@/components/trust/RelationshipCardForm';
 import { supabase } from '@/integrations/supabase/client';
 import { Member, SharingScenario, Card as CardType, PersonalCardData } from '@/lib/types';
 import { toast } from 'sonner';
@@ -37,6 +38,11 @@ export default function Invite() {
   const [emailScenario, setEmailScenario] = useState<string>('');
   const [emailMessage, setEmailMessage] = useState('');
   const [generatedLink, setGeneratedLink] = useState<string>('');
+  
+  // Relationship CARD state (OPN3.008)
+  const [relationshipEnabled, setRelationshipEnabled] = useState(false);
+  const [inviterRelLabel, setInviterRelLabel] = useState('');
+  const [inviteeRelLabel, setInviteeRelLabel] = useState('');
   
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -179,7 +185,14 @@ export default function Invite() {
         title: inviteeTitle || undefined,
       };
 
-      // Create invite link - using type assertion due to types not yet regenerated
+      // Build relationship card if enabled (OPN3.008)
+      const relationshipCardJson = buildRelationshipCardJson(
+        relationshipEnabled,
+        inviterRelLabel,
+        inviteeRelLabel
+      );
+
+      // Create invite link with relationship_card_json
       const { data: inviteLink, error: linkError } = await (supabase
         .from('tno_invite_links' as 'tno_members')
         .insert({
@@ -188,6 +201,7 @@ export default function Invite() {
           invitee_name: inviteeName || null,
           scenario_id: emailScenario,
           invitation_card_json: invitationCardJson,
+          relationship_card_json: relationshipCardJson,
         } as never)
         .select()
         .single()) as { data: { id: string; token: string; invitation_id: string | null } | null; error: Error | null };
@@ -251,6 +265,15 @@ export default function Invite() {
         },
       });
 
+      // If relationship card was proposed, create audit event (OPN3.008)
+      if (relationshipCardJson) {
+        await supabase.from('tno_audit_events').insert({
+          event_type: 'relationship_card.proposed' as const,
+          actor_member_id: user.id,
+          metadata: relationshipCardJson as unknown as Record<string, unknown>,
+        } as never);
+      }
+
       // Generate the join link
       const joinLink = `${window.location.origin}/join?token=${inviteLink.token}`;
       setGeneratedLink(joinLink);
@@ -286,6 +309,10 @@ export default function Invite() {
     setEmailScenario('');
     setEmailMessage('');
     setGeneratedLink('');
+    // Reset relationship CARD state (OPN3.008)
+    setRelationshipEnabled(false);
+    setInviterRelLabel('');
+    setInviteeRelLabel('');
   };
 
   const selectedScenarioData = scenarios.find(s => s.scenario_id === selectedScenario);
@@ -596,11 +623,23 @@ export default function Invite() {
                   </CardContent>
                 </Card>
 
-                {/* Step 3: Optional Message */}
+                {/* Step 3: Relationship CARD (OPN3.008) */}
+                <RelationshipCardForm
+                  enabled={relationshipEnabled}
+                  onEnabledChange={setRelationshipEnabled}
+                  inviterLabel={inviterRelLabel}
+                  inviteeLabel={inviteeRelLabel}
+                  onInviterLabelChange={setInviterRelLabel}
+                  onInviteeLabelChange={setInviteeRelLabel}
+                  inviterName={member?.handle || 'You'}
+                  inviteeName={inviteeName || 'Invitee'}
+                />
+
+                {/* Step 4: Optional Message */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">3</span>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">4</span>
                       Add a Message
                       <span className="text-xs font-normal text-muted-foreground">(optional)</span>
                     </CardTitle>

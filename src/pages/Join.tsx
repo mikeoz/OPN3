@@ -7,9 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CardBadge } from '@/components/trust/CardBadge';
 import { supabase } from '@/integrations/supabase/client';
-import { Card as CardType, PersonalCardData } from '@/lib/types';
+import { Card as CardType, PersonalCardData, RelationshipCardData } from '@/lib/types';
 import { toast } from 'sonner';
-import { Loader2, UserPlus, Shield, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Loader2, UserPlus, Shield, ArrowRight, CheckCircle2, AlertCircle, Heart } from 'lucide-react';
 
 interface ClaimResult {
   invite_link_id: string;
@@ -24,6 +24,7 @@ interface ClaimResult {
     description: string;
   };
   invitation_card_json: PersonalCardData;
+  relationship_card_json: RelationshipCardData | null;
   invitee_name: string | null;
   invitee_email: string;
 }
@@ -256,6 +257,36 @@ export default function Join() {
             {claimData?.inviter.handle || claimData?.inviter.email} invited you to connect
           </p>
         </div>
+
+        {/* Proposed Relationship CARD (OPN3.008) */}
+        {claimData?.relationship_card_json && (
+          <Card className="border-primary/50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                Proposed Relationship
+              </CardTitle>
+              <CardDescription>
+                {claimData?.inviter.handle || claimData?.inviter.email} has proposed the following relationship
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">{claimData?.inviter.handle || 'Inviter'}:</span>
+                  <span className="text-primary">{claimData.relationship_card_json.inviter_label}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium">You:</span>
+                  <span className="text-primary">{claimData.relationship_card_json.invitee_label}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">
+                By accepting, you agree to this relationship declaration.
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Invitation Details */}
         <Card>

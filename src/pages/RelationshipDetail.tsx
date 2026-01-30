@@ -22,7 +22,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Relationship, Member, SharingScenario, Card as CardType, CardShare } from '@/lib/types';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Users, Unlink, Calendar, Shield } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, Unlink, Calendar, Shield, Heart } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function RelationshipDetail() {
@@ -195,6 +195,34 @@ export default function RelationshipDetail() {
           </div>
           <StatusBadge status={relationship.status} />
         </div>
+
+        {/* Relationship Type Card (OPN3.008) */}
+        {(relationship.inviter_relationship_label || relationship.invitee_relationship_label) && (
+          <Card className="border-primary/30">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                Relationship Type
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                {relationship.inviter_relationship_label && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">Inviter's role:</span>
+                    <span className="text-primary">{relationship.inviter_relationship_label}</span>
+                  </div>
+                )}
+                {relationship.invitee_relationship_label && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-medium">Invitee's role:</span>
+                    <span className="text-primary">{relationship.invitee_relationship_label}</span>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Details */}
         <div className="grid gap-6">

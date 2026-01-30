@@ -11,6 +11,7 @@ import {
   Mail,
   UserCheck,
   CreditCard,
+  Heart,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -80,6 +81,18 @@ const eventConfig: Record<AuditEventType, { icon: LucideIcon; label: string; col
     color: 'text-success',
     bgColor: 'bg-success/10',
   },
+  'relationship_card.proposed': {
+    icon: Heart,
+    label: 'Relationship CARD proposed',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+  },
+  'relationship_card.activated': {
+    icon: Heart,
+    label: 'Relationship CARD activated',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
+  },
   'personal_card.updated': {
     icon: CreditCard,
     label: 'Personal CARD updated',
@@ -144,6 +157,20 @@ export function AuditEventItem({ event }: AuditEventItemProps) {
         return isActor ? 'You created your Personal CARD' : `${actorName} created their Personal CARD`;
       case 'personal_card.updated':
         return isActor ? 'You updated your Personal CARD' : `${actorName} updated their Personal CARD`;
+      case 'relationship_card.proposed': {
+        const labels = event.metadata as Record<string, unknown> | null;
+        const inviterLabel = labels?.inviter_label as string | undefined;
+        return isActor 
+          ? `You proposed a relationship${inviterLabel ? ` as "${inviterLabel}"` : ''}`
+          : `${actorName} proposed a relationship`;
+      }
+      case 'relationship_card.activated': {
+        const labels = event.metadata as Record<string, unknown> | null;
+        const inviterLabel = labels?.inviter_label as string | undefined;
+        return isActor 
+          ? `Relationship activated${inviterLabel ? ` ("${inviterLabel}")` : ''}`
+          : `Relationship with ${actorName} activated`;
+      }
       default:
         return 'Unknown event';
     }
