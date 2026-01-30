@@ -21,7 +21,9 @@ export type AuditEventType =
   | 'invite.claimed'
   | 'invite.revoked'
   | 'personal_card.created'
-  | 'personal_card.updated';
+  | 'personal_card.updated'
+  | 'relationship_card.proposed'
+  | 'relationship_card.activated';
 
 export interface Member {
   member_id: string;
@@ -102,6 +104,8 @@ export interface Relationship {
   status: RelationshipStatus;
   created_at: string;
   terminated_at: string | null;
+  inviter_relationship_label: string | null;
+  invitee_relationship_label: string | null;
   other_member?: Member;
   scenario?: SharingScenario;
   card_share?: CardShare;
@@ -124,6 +128,7 @@ export interface InviteLink {
   invitee_name: string | null;
   scenario_id: string;
   invitation_card_json: PersonalCardData;
+  relationship_card_json: RelationshipCardData | null;
   status: InviteLinkStatus;
   claimed_by_member_id: string | null;
   invitation_id: string | null;
@@ -131,6 +136,13 @@ export interface InviteLink {
   expires_at: string;
   revoked_at: string | null;
   scenario?: SharingScenario;
+}
+
+// Alpha-minimal Relationship CARD
+// Stores asymmetric relationship labels from inviter perspective
+export interface RelationshipCardData {
+  inviter_label: string;  // e.g., "Parent of"
+  invitee_label: string;  // e.g., "Child of"
 }
 
 export interface PersonalCardData {
