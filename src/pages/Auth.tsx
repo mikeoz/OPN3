@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ const passwordSchema = z.string().min(6, 'Password must be at least 6 characters
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/';
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [signInEmail, setSignInEmail] = useState('');
@@ -27,9 +29,9 @@ export default function Auth() {
 
   useEffect(() => {
     if (!loading && user) {
-      navigate('/');
+      navigate(redirectUrl);
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, redirectUrl]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +53,7 @@ export default function Auth() {
     if (error) {
       toast.error(error.message);
     } else {
-      navigate('/');
+      navigate(redirectUrl);
     }
   };
 

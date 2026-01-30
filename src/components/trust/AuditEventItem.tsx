@@ -1,4 +1,4 @@
-import { AuditEvent } from '@/lib/types';
+import { AuditEvent, AuditEventType } from '@/lib/types';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDistanceToNow } from 'date-fns';
 import { 
@@ -7,7 +7,11 @@ import {
   Check, 
   X, 
   Link2, 
-  Unlink 
+  Unlink,
+  Mail,
+  UserCheck,
+  CreditCard,
+  LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +19,7 @@ interface AuditEventItemProps {
   event: AuditEvent;
 }
 
-const eventConfig = {
+const eventConfig: Record<AuditEventType, { icon: LucideIcon; label: string; color: string; bgColor: string }> = {
   'member.created': {
     icon: UserPlus,
     label: 'Account created',
@@ -52,11 +56,46 @@ const eventConfig = {
     color: 'text-destructive',
     bgColor: 'bg-destructive/10',
   },
+  'invite.created': {
+    icon: Mail,
+    label: 'Invite link created',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+  },
+  'invite.claimed': {
+    icon: UserCheck,
+    label: 'Invite claimed',
+    color: 'text-warning',
+    bgColor: 'bg-warning/10',
+  },
+  'invite.revoked': {
+    icon: X,
+    label: 'Invite revoked',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
+  },
+  'personal_card.created': {
+    icon: CreditCard,
+    label: 'Personal CARD created',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
+  },
+  'personal_card.updated': {
+    icon: CreditCard,
+    label: 'Personal CARD updated',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+  },
 };
 
 export function AuditEventItem({ event }: AuditEventItemProps) {
   const { user } = useAuth();
-  const config = eventConfig[event.event_type];
+  const config = eventConfig[event.event_type] || {
+    icon: Send,
+    label: event.event_type,
+    color: 'text-muted-foreground',
+    bgColor: 'bg-muted',
+  };
   const Icon = config.icon;
 
   const isActor = event.actor_member_id === user?.id;
@@ -87,6 +126,24 @@ export function AuditEventItem({ event }: AuditEventItemProps) {
         return isActor 
           ? `You terminated relationship with ${subjectName}` 
           : `${actorName} terminated your relationship`;
+      case 'invite.created': {
+        const email = (event.metadata as Record<string, unknown>)?.invitee_email as string | undefined;
+        return isActor 
+          ? `You created an invite link${email ? ` for ${email}` : ''}`
+          : 'Invite link created';
+      }
+      case 'invite.claimed':
+        return isActor 
+          ? `You claimed ${subjectName}'s invitation`
+          : `${actorName} claimed your invitation`;
+      case 'invite.revoked':
+        return isActor 
+          ? 'You revoked an invite link'
+          : `${actorName} revoked an invitation`;
+      case 'personal_card.created':
+        return isActor ? 'You created your Personal CARD' : `${actorName} created their Personal CARD`;
+      case 'personal_card.updated':
+        return isActor ? 'You updated your Personal CARD' : `${actorName} updated their Personal CARD`;
       default:
         return 'Unknown event';
     }
