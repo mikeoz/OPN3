@@ -254,6 +254,34 @@ Consider adding:
 
 ---
 
+## Decision A-013: CARD-native identity authority
+
+**Context**  
+OPN3.010-3 establishes CARDs as the canonical source of identity data, replacing the implicit treatment of identity as profile fields.
+
+**Alpha Choice**  
+Identity attributes are now stored in discrete CARD instances:
+1. `identity.basic` CARD stores name/display identity
+2. `contact.email` CARD stores email address
+3. `contact.phone` CARD stores phone number (optional)
+
+Each CARD has its own `card_id`, is owned by the member, and can be independently shared or revoked.
+
+**Implementation**  
+- `tno_member_cards` table stores member-owned CARD instances
+- Identity CARDs are created on account creation and invitation acceptance
+- Profile rendering reads from CARDs via `tno_get_member_identity()` RPC
+- Profile edits update underlying CARDs via `tno_update_member_card()` RPC
+- Legacy `tno_personal_cards` table retained for backward compatibility
+
+**Implication**  
+Identity data exists only in CARDs. A user can share/revoke email without affecting name or phone. This establishes the foundation for CARD-centric trust controls.
+
+**MVP Transition**  
+Fully deprecate `tno_personal_cards`. Add CARD versioning, multiple instances per type (e.g., work email, personal email), and CARD stacking for composite identities.
+
+---
+
 ## How to Use This Document
 
 - Each new Alpha shortcut must be recorded as a new Decision (A-013, A-014, …)
@@ -266,4 +294,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.010-1
+End of v0.1 + OPN3.010-3

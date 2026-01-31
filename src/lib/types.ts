@@ -177,6 +177,19 @@ export interface PersonalCard {
   updated_at: string;
 }
 
+// OPN3.010-3: Member-owned CARD instances (canonical identity source)
+export interface MemberCard {
+  id: string;
+  member_id: string;
+  catalog_card_id: string;
+  card_data: Record<string, unknown>;
+  label: string | null;
+  created_at: string;
+  updated_at: string;
+  // Joined data
+  catalog_card?: Card;
+}
+
 export interface AuditEvent {
   audit_id: string;
   event_type: AuditEventType;

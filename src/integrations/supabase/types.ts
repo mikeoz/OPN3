@@ -445,6 +445,51 @@ export type Database = {
           },
         ]
       }
+      tno_member_cards: {
+        Row: {
+          card_data: Json
+          catalog_card_id: string
+          created_at: string
+          id: string
+          label: string | null
+          member_id: string
+          updated_at: string
+        }
+        Insert: {
+          card_data: Json
+          catalog_card_id: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          member_id: string
+          updated_at?: string
+        }
+        Update: {
+          card_data?: Json
+          catalog_card_id?: string
+          created_at?: string
+          id?: string
+          label?: string | null
+          member_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_member_cards_catalog_card_id_fkey"
+            columns: ["catalog_card_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_catalog"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "tno_member_cards_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       tno_members: {
         Row: {
           created_at: string
@@ -809,6 +854,15 @@ export type Database = {
         Returns: boolean
       }
       tno_claim_invite: { Args: { p_token: string }; Returns: Json }
+      tno_create_identity_cards: {
+        Args: {
+          p_email: string
+          p_member_id: string
+          p_name: string
+          p_phone?: string
+        }
+        Returns: undefined
+      }
       tno_create_share_proposal: {
         Args: {
           p_card_ids: string[]
@@ -823,6 +877,7 @@ export type Database = {
         Args: { p_note?: string; p_proposal_id: string }
         Returns: boolean
       }
+      tno_get_member_identity: { Args: { p_member_id: string }; Returns: Json }
       tno_preview_invite: { Args: { p_token: string }; Returns: Json }
       tno_revoke_invite: {
         Args: { p_invite_link_id: string; p_reason?: string }
@@ -830,6 +885,14 @@ export type Database = {
       }
       tno_revoke_shared_card: {
         Args: { p_card_id: string; p_proposal_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      tno_update_member_card: {
+        Args: {
+          p_card_data: Json
+          p_catalog_card_key: string
+          p_label?: string
+        }
         Returns: boolean
       }
     }

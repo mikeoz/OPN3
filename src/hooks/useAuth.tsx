@@ -91,6 +91,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error: new Error(memberError.message) };
       }
 
+      // OPN3.010-3: Create initial identity CARDs
+      await supabase.rpc('tno_create_identity_cards', {
+        p_member_id: data.user.id,
+        p_name: handle || '',
+        p_email: email,
+        p_phone: null,
+      });
+
       // Create audit event
       await supabase.from('tno_audit_events').insert({
         event_type: 'member.created',
