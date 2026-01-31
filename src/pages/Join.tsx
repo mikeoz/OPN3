@@ -36,6 +36,7 @@ export default function Join() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const isAlphaSwitch = searchParams.get('alpha_switch') === 'true';
 
   const [step, setStep] = useState<JoinStep>('loading');
   const [error, setError] = useState<string>('');
@@ -168,7 +169,7 @@ export default function Join() {
     );
   }
 
-  // Screen 8: Join Invitation (Auth step) - OPN3.008-2
+  // Screen 8: Join Invitation (Auth step) - OPN3.008-2/3
   if (step === 'auth') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -183,18 +184,27 @@ export default function Join() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* OPN3.008-3: Alpha persona switch notice */}
+            {isAlphaSwitch && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <p className="text-sm text-amber-700 dark:text-amber-400">
+                  <strong>Persona Switch Complete:</strong> You have been signed out of the inviter account. You are no longer signed in as the person who created this invitation.
+                </p>
+              </div>
+            )}
+
             {/* Two clear buttons: Sign In and Create Account */}
             <div className="grid grid-cols-2 gap-3">
               <Button 
                 variant="outline"
                 className="w-full" 
-                onClick={() => navigate(`/auth?redirect=/join?token=${token}&mode=signin`)}
+                onClick={() => navigate(`/auth?redirect=/join?token=${token}${isAlphaSwitch ? '&alpha_switch=true' : ''}&mode=signin`)}
               >
                 Sign In
               </Button>
               <Button 
                 className="w-full" 
-                onClick={() => navigate(`/auth?redirect=/join?token=${token}&mode=signup`)}
+                onClick={() => navigate(`/auth?redirect=/join?token=${token}${isAlphaSwitch ? '&alpha_switch=true' : ''}&mode=signup`)}
               >
                 Create Account
               </Button>
@@ -203,7 +213,9 @@ export default function Join() {
             {/* Alpha Test Tip */}
             <div className="p-3 bg-primary/5 border border-primary/30 rounded-lg">
               <p className="text-xs text-muted-foreground">
-                <strong className="text-foreground">Alpha Test Tip:</strong> If you have not created the invitee test account, choose <strong>Create Account</strong>. Otherwise, choose <strong>Sign In</strong>.
+                <strong className="text-foreground">Alpha Test Tip:</strong> {isAlphaSwitch 
+                  ? 'Sign in as your invitee test account, or create a new account to act as the invited person.'
+                  : 'If you have not created the invitee test account, choose Create Account. Otherwise, choose Sign In.'}
               </p>
             </div>
             
