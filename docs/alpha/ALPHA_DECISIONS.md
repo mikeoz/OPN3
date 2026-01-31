@@ -116,9 +116,28 @@ Extend Relationship CARDs with structured types, optional validation, and permis
 
 ---
 
+## Decision A-006: Alpha persona-switch UI hints
+
+**Context**  
+Alpha testing requires one tester to play both inviter and invitee roles in a single browser session.
+
+**Alpha Choice**  
+Temporary UI affordances added to support persona switching:
+- Screen 7 (Invite Link Ready): Primary "Continue as Invitee (Alpha Test)" button navigates to join link in same session; "Create Another Invite" disabled with MVP tooltip.
+- Screen 8 (Join Invitation): Explicit framing that user is acting as invitee; separate "Sign In" and "Create Account" buttons; Alpha Test Tip explaining account choice.
+- Screen 9 (Success): Completion panel with "Continue to Share Back (Alpha)" shortcut.
+
+**Implication**  
+These hints are temporary Alpha scaffolding and will be removed in MVP when invitations are delivered externally and testers do not need to manually switch personas.
+
+**MVP Transition**  
+Remove all Alpha Test Tips, persona switch buttons, and disabled-feature tooltips. Restore standard "Create Another Invite" functionality.
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-005, A-006, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-006, A-007, …)
 
 - Decisions are never deleted or rewritten
 
@@ -128,4 +147,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.008
+End of v0.1 + OPN3.008-2

@@ -14,7 +14,9 @@ import { RelationshipCardForm, buildRelationshipCardJson } from '@/components/tr
 import { supabase } from '@/integrations/supabase/client';
 import { Member, SharingScenario, Card as CardType, PersonalCardData } from '@/lib/types';
 import { toast } from 'sonner';
-import { Send, Loader2, Users, ChevronRight, Copy, Mail, ExternalLink } from 'lucide-react';
+import { Send, Loader2, Users, ChevronRight, Copy, Mail, ExternalLink, Info, Play } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function Invite() {
   const { user, member } = useAuth();
@@ -302,6 +304,12 @@ export default function Invite() {
     window.open(generatedLink, '_blank');
   };
 
+  // OPN3.008-2: Continue as invitee in same session for Alpha testing
+  const handleContinueAsInvitee = () => {
+    // Navigate to join link in same window for persona switch
+    window.location.href = generatedLink;
+  };
+
   const handleResetEmailForm = () => {
     setInviteeEmail('');
     setInviteeName('');
@@ -482,7 +490,7 @@ export default function Invite() {
           {/* Email Invite Tab */}
           <TabsContent value="email" className="space-y-6">
             {generatedLink ? (
-              // Show generated link
+              // Screen 7: Invite Link Ready (OPN3.008-2)
               <Card className="border-primary">
                 <CardHeader>
                   <CardTitle className="text-lg text-primary">Invite Link Ready!</CardTitle>
@@ -494,19 +502,52 @@ export default function Invite() {
                   <div className="p-3 bg-muted rounded-lg break-all font-mono text-sm">
                     {generatedLink}
                   </div>
+                  
+                  {/* Primary action: Continue as Invitee for Alpha testing */}
+                  <Button onClick={handleContinueAsInvitee} className="w-full" size="lg">
+                    <Play className="h-4 w-4 mr-2" />
+                    Continue as Invitee (Alpha Test)
+                  </Button>
+
+                  {/* Alpha Test Tip */}
+                  <Alert className="border-primary/30 bg-primary/5">
+                    <Info className="h-4 w-4 text-primary" />
+                    <AlertDescription className="text-sm">
+                      <strong>Alpha Test Tip:</strong> Click "Continue as Invitee" above to complete the invitation flow as the receiving person. You will switch to the invitee perspective.
+                    </AlertDescription>
+                  </Alert>
+
+                  {/* Secondary actions */}
                   <div className="flex gap-2">
-                    <Button onClick={handleCopyLink} className="flex-1">
+                    <Button onClick={handleCopyLink} variant="outline" className="flex-1">
                       <Copy className="h-4 w-4 mr-2" />
                       Copy Link
                     </Button>
                     <Button variant="outline" onClick={handleOpenAsInvitee}>
                       <ExternalLink className="h-4 w-4 mr-2" />
-                      Open (Test)
+                      Open in New Tab
                     </Button>
                   </div>
-                  <Button variant="ghost" onClick={handleResetEmailForm} className="w-full">
-                    Create Another Invite
-                  </Button>
+
+                  {/* Disabled Create Another Invite for Alpha */}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="w-full">
+                          <Button 
+                            variant="ghost" 
+                            className="w-full opacity-50 cursor-not-allowed" 
+                            disabled
+                          >
+                            Create Another Invite
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Available in MVP / later</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </CardContent>
               </Card>
             ) : (
