@@ -191,9 +191,25 @@ Consider whether prefill behavior should persist in production or if invitees sh
 
 ---
 
+## Decision A-010: OPN3.008 scope closes at relationship acceptance
+
+**Context**  
+OPN3.008 Alpha successfully demonstrates the complete invitation lifecycle: Invite → Persona Switch → Authenticate → Claim → Accept → Relationship Created.
+
+**Alpha Choice**  
+Relationship acceptance is declared the terminal state for OPN3.008. The "Continue to Share Back (Alpha)" button explicitly labels the next phase as OPN3.009.
+
+**Implication**  
+Share-back, CARD exchange, and ongoing relationship management are explicitly out of scope for this thread. Any further UX beyond the Relationship Created screen belongs to subsequent threads.
+
+**MVP Transition**  
+Thread boundaries will be replaced by a continuous user flow where relationship creation naturally leads into CARD sharing without explicit phase markers.
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-010, A-011, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-011, A-012, …)
 
 - Decisions are never deleted or rewritten
 
@@ -203,4 +219,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.008-5
+End of v0.1 + OPN3.008-7
