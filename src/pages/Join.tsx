@@ -168,6 +168,7 @@ export default function Join() {
     );
   }
 
+  // Screen 8: Join Invitation (Auth step) - OPN3.008-2
   if (step === 'auth') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -178,19 +179,36 @@ export default function Join() {
             </div>
             <CardTitle>Join Invitation</CardTitle>
             <CardDescription>
-              You've been invited to join Opn3. Please sign in or create an account to continue.
+              You are joining as the <strong>invited person</strong>. To continue, sign in or create a new account.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Button 
-              className="w-full" 
-              onClick={() => navigate(`/auth?redirect=/join?token=${token}`)}
-            >
-              Sign In or Sign Up
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
+            {/* Two clear buttons: Sign In and Create Account */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button 
+                variant="outline"
+                className="w-full" 
+                onClick={() => navigate(`/auth?redirect=/join?token=${token}&mode=signin`)}
+              >
+                Sign In
+              </Button>
+              <Button 
+                className="w-full" 
+                onClick={() => navigate(`/auth?redirect=/join?token=${token}&mode=signup`)}
+              >
+                Create Account
+              </Button>
+            </div>
+            
+            {/* Alpha Test Tip */}
+            <div className="p-3 bg-primary/5 border border-primary/30 rounded-lg">
+              <p className="text-xs text-muted-foreground">
+                <strong className="text-foreground">Alpha Test Tip:</strong> If you have not created the invitee test account, choose <strong>Create Account</strong>. Otherwise, choose <strong>Sign In</strong>.
+              </p>
+            </div>
+            
             <p className="text-xs text-center text-muted-foreground">
-              After signing in, you'll be able to accept this invitation and establish a trusted relationship.
+              Once authenticated, you'll be able to review and accept this invitation.
             </p>
           </CardContent>
         </Card>
@@ -219,6 +237,7 @@ export default function Join() {
     );
   }
 
+  // Screen 9 Success: Completion panel with next steps - OPN3.008-2
   if (step === 'success') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -232,11 +251,28 @@ export default function Join() {
               You're now connected with {claimData?.inviter.handle || claimData?.inviter.email}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {/* Primary action: View relationship */}
             <Button className="w-full" onClick={handleGoToRelationship}>
               View Relationship
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
+            
+            {/* Alpha next step: Share back */}
+            <div className="p-4 bg-primary/5 border border-primary/30 rounded-lg space-y-3">
+              <p className="text-sm font-medium text-center">What's Next?</p>
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate('/invite')}
+              >
+                Continue to Share Back (Alpha)
+                <ArrowRight className="h-4 w-4 ml-2" />
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                In the full app, you would share CARDs back to complete the trust loop.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
