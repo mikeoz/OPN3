@@ -86,6 +86,7 @@ export type Database = {
           invitation_id: string | null
           metadata: Json | null
           relationship_id: string | null
+          share_proposal_id: string | null
           subject_member_id: string | null
         }
         Insert: {
@@ -97,6 +98,7 @@ export type Database = {
           invitation_id?: string | null
           metadata?: Json | null
           relationship_id?: string | null
+          share_proposal_id?: string | null
           subject_member_id?: string | null
         }
         Update: {
@@ -108,6 +110,7 @@ export type Database = {
           invitation_id?: string | null
           metadata?: Json | null
           relationship_id?: string | null
+          share_proposal_id?: string | null
           subject_member_id?: string | null
         }
         Relationships: [
@@ -138,6 +141,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tno_relationships"
             referencedColumns: ["relationship_id"]
+          },
+          {
+            foreignKeyName: "tno_audit_events_share_proposal_id_fkey"
+            columns: ["share_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "tno_share_proposals"
+            referencedColumns: ["proposal_id"]
           },
           {
             foreignKeyName: "tno_audit_events_subject_member_id_fkey"
@@ -644,6 +654,107 @@ export type Database = {
           },
         ]
       }
+      tno_share_proposal_items: {
+        Row: {
+          card_id: string
+          position: number
+          proposal_id: string
+        }
+        Insert: {
+          card_id: string
+          position?: number
+          proposal_id: string
+        }
+        Update: {
+          card_id?: string
+          position?: number
+          proposal_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_share_proposal_items_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "tno_card_catalog"
+            referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "tno_share_proposal_items_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "tno_share_proposals"
+            referencedColumns: ["proposal_id"]
+          },
+        ]
+      }
+      tno_share_proposals: {
+        Row: {
+          created_at: string
+          from_member_id: string
+          message: string | null
+          note: string | null
+          proposal_id: string
+          relationship_id: string
+          responded_at: string | null
+          scenario_id: string
+          status: Database["public"]["Enums"]["share_proposal_status"]
+          to_member_id: string
+        }
+        Insert: {
+          created_at?: string
+          from_member_id: string
+          message?: string | null
+          note?: string | null
+          proposal_id?: string
+          relationship_id: string
+          responded_at?: string | null
+          scenario_id: string
+          status?: Database["public"]["Enums"]["share_proposal_status"]
+          to_member_id: string
+        }
+        Update: {
+          created_at?: string
+          from_member_id?: string
+          message?: string | null
+          note?: string | null
+          proposal_id?: string
+          relationship_id?: string
+          responded_at?: string | null
+          scenario_id?: string
+          status?: Database["public"]["Enums"]["share_proposal_status"]
+          to_member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tno_share_proposals_from_member_id_fkey"
+            columns: ["from_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_share_proposals_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "tno_relationships"
+            referencedColumns: ["relationship_id"]
+          },
+          {
+            foreignKeyName: "tno_share_proposals_scenario_id_fkey"
+            columns: ["scenario_id"]
+            isOneToOne: false
+            referencedRelation: "tno_sharing_scenarios"
+            referencedColumns: ["scenario_id"]
+          },
+          {
+            foreignKeyName: "tno_share_proposals_to_member_id_fkey"
+            columns: ["to_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
+          },
+        ]
+      }
       tno_sharing_scenarios: {
         Row: {
           created_at: string
@@ -680,7 +791,25 @@ export type Database = {
         Args: { p_personal_card_json: Json; p_token: string }
         Returns: string
       }
+      tno_accept_share_proposal: {
+        Args: { p_note?: string; p_proposal_id: string }
+        Returns: boolean
+      }
       tno_claim_invite: { Args: { p_token: string }; Returns: Json }
+      tno_create_share_proposal: {
+        Args: {
+          p_card_ids: string[]
+          p_message?: string
+          p_relationship_id: string
+          p_scenario_id: string
+          p_to_member_id: string
+        }
+        Returns: string
+      }
+      tno_decline_share_proposal: {
+        Args: { p_note?: string; p_proposal_id: string }
+        Returns: boolean
+      }
       tno_preview_invite: { Args: { p_token: string }; Returns: Json }
       tno_revoke_invite: {
         Args: { p_invite_link_id: string; p_reason?: string }
@@ -703,6 +832,10 @@ export type Database = {
         | "personal_card.updated"
         | "relationship_card.proposed"
         | "relationship_card.activated"
+        | "share_proposal.created"
+        | "share_proposal.accepted"
+        | "share_proposal.declined"
+        | "trust_loop.completed"
       card_share_status: "offered" | "accepted" | "revoked"
       card_status: "active" | "deprecated"
       card_type: "standard"
@@ -721,6 +854,7 @@ export type Database = {
       member_status: "active" | "disabled"
       relationship_status: "active" | "terminated"
       scenario_status: "active" | "deprecated"
+      share_proposal_status: "pending" | "accepted" | "declined"
       verification_level: "assumed_verified"
     }
     CompositeTypes: {
@@ -864,6 +998,10 @@ export const Constants = {
         "personal_card.updated",
         "relationship_card.proposed",
         "relationship_card.activated",
+        "share_proposal.created",
+        "share_proposal.accepted",
+        "share_proposal.declined",
+        "trust_loop.completed",
       ],
       card_share_status: ["offered", "accepted", "revoked"],
       card_status: ["active", "deprecated"],
@@ -885,6 +1023,7 @@ export const Constants = {
       member_status: ["active", "disabled"],
       relationship_status: ["active", "terminated"],
       scenario_status: ["active", "deprecated"],
+      share_proposal_status: ["pending", "accepted", "declined"],
       verification_level: ["assumed_verified"],
     },
   },

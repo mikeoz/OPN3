@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 interface StatusBadgeProps {
-  status: 'active' | 'pending' | 'terminated' | 'accepted' | 'rejected' | 'offered' | 'revoked' | 'cancelled' | 'expired';
+  status: 'active' | 'pending' | 'terminated' | 'accepted' | 'rejected' | 'offered' | 'revoked' | 'cancelled' | 'expired' | 'declined';
   className?: string;
 }
 
@@ -15,6 +15,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   revoked: { label: 'Revoked', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   cancelled: { label: 'Cancelled', className: 'bg-muted text-muted-foreground border-muted' },
   expired: { label: 'Expired', className: 'bg-muted text-muted-foreground border-muted' },
+  declined: { label: 'Declined', className: 'bg-destructive/10 text-destructive border-destructive/20' },
 };
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {

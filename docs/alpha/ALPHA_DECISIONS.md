@@ -207,9 +207,32 @@ Thread boundaries will be replaced by a continuous user flow where relationship 
 
 ---
 
+## Decision A-011: Share Back is the second trust act
+
+**Context**  
+OPN3.009 implements Share Back functionality allowing members to propose CARD sharing within an existing relationship.
+
+**Alpha Choice**  
+Share Back is a separate, explicit trust act. Relationship creation alone does not grant data access. The recipient must explicitly accept the share proposal to complete the trust loop.
+
+**Mechanics**  
+1. Member initiates "Share Back" from an active relationship
+2. Member selects CARDs to propose sharing
+3. Proposal is created and recipient sees it in Inbox
+4. Recipient can accept (trust loop completed) or decline
+5. All transitions are audited
+
+**Implication**  
+Trust is always bidirectional and requires explicit consent at each step. A relationship is a container for potential sharing, not automatic access.
+
+**MVP Transition**  
+Share Back may be streamlined into the initial invitation flow, allowing bidirectional sharing proposals from the start. The core principle of explicit consent for each share direction will be preserved.
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-011, A-012, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-012, A-013, …)
 
 - Decisions are never deleted or rewritten
 
@@ -219,4 +242,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.008-7
+End of v0.1 + OPN3.009-1

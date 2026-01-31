@@ -10,6 +10,7 @@ import Invite from "./pages/Invite";
 import Inbox from "./pages/Inbox";
 import Join from "./pages/Join";
 import RelationshipDetail from "./pages/RelationshipDetail";
+import ShareBack from "./pages/ShareBack";
 import Audit from "./pages/Audit";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -67,6 +68,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <RelationshipDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/share-back/:relationshipId"
+        element={
+          <ProtectedRoute>
+            <ShareBack />
           </ProtectedRoute>
         }
       />
