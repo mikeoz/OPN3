@@ -702,6 +702,7 @@ export type Database = {
       tno_share_proposal_items: {
         Row: {
           card_id: string
+          member_card_id: string | null
           position: number
           proposal_id: string
           revoked_at: string | null
@@ -709,6 +710,7 @@ export type Database = {
         }
         Insert: {
           card_id: string
+          member_card_id?: string | null
           position?: number
           proposal_id: string
           revoked_at?: string | null
@@ -716,6 +718,7 @@ export type Database = {
         }
         Update: {
           card_id?: string
+          member_card_id?: string | null
           position?: number
           proposal_id?: string
           revoked_at?: string | null
@@ -728,6 +731,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tno_card_catalog"
             referencedColumns: ["card_id"]
+          },
+          {
+            foreignKeyName: "tno_share_proposal_items_member_card_id_fkey"
+            columns: ["member_card_id"]
+            isOneToOne: false
+            referencedRelation: "tno_member_cards"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "tno_share_proposal_items_proposal_id_fkey"
@@ -865,7 +875,7 @@ export type Database = {
       }
       tno_create_share_proposal: {
         Args: {
-          p_card_ids: string[]
+          p_member_card_ids: string[]
           p_message?: string
           p_relationship_id: string
           p_scenario_id: string
@@ -876,6 +886,10 @@ export type Database = {
       tno_decline_share_proposal: {
         Args: { p_note?: string; p_proposal_id: string }
         Returns: boolean
+      }
+      tno_ensure_identity_cards: {
+        Args: { p_member_id: string }
+        Returns: undefined
       }
       tno_get_member_identity: { Args: { p_member_id: string }; Returns: Json }
       tno_preview_invite: { Args: { p_token: string }; Returns: Json }
