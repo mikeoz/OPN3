@@ -48,7 +48,7 @@ interface ClaimResult {
 type JoinStep = 'loading' | 'auth' | 'claim' | 'edit' | 'success' | 'error';
 
 export default function Join() {
-  const { user, loading: authLoading, signIn, signUp } = useAuth();
+  const { user, member, loading: authLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -59,6 +59,10 @@ export default function Join() {
   const [claimData, setClaimData] = useState<ClaimResult | null>(null);
   const [scenarioCards, setScenarioCards] = useState<CardType[]>([]);
   const [relationshipId, setRelationshipId] = useState<string | null>(null);
+  
+  // OPN3.008-5: Invite preview for prefilling auth forms
+  const [invitePreview, setInvitePreview] = useState<InvitePreview | null>(null);
+  const [previewLoaded, setPreviewLoaded] = useState(false);
 
   // Personal card form state
   const [formName, setFormName] = useState('');
@@ -75,6 +79,74 @@ export default function Join() {
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [activeAuthTab, setActiveAuthTab] = useState<string>('signup');
 
+  // OPN3.008-5: Fetch invite preview to prefill auth forms (no auth required)
+  const fetchInvitePreview = useCallback(async () => {
+    if (!token || previewLoaded) return;
+    
+    try {
+      const { data, error: previewError } = await (supabase.rpc('tno_preview_invite' as never, {
+        p_token: token,
+      } as never)) as { data: unknown; error: Error | null };
+
+      if (previewError) {
+        console.error('Preview error:', previewError);
+        return;
+      }
+
+      const preview = data as InvitePreview;
+      setInvitePreview(preview);
+      
+      // Prefill auth form with inviter-provided data
+      if (preview.is_valid) {
+        setAuthEmail(preview.invitee_email || '');
+        setAuthHandle(preview.invitee_name || '');
+      } else {
+        setError(preview.error_message || 'Invalid invitation');
+        setStep('error');
+      }
+    } catch (err) {
+      console.error('Failed to fetch invite preview:', err);
+    } finally {
+      setPreviewLoaded(true);
+    }
+  }, [token, previewLoaded]);
+
+  // OPN3.008-5: Ensure member record exists before claiming
+  const ensureMemberExists = useCallback(async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    // Check if member already exists
+    const { data: existingMember } = await supabase
+      .from('tno_members')
+      .select('member_id')
+      .eq('member_id', user.id)
+      .maybeSingle();
+    
+    if (existingMember) {
+      return true;
+    }
+    
+    // Create member if missing (edge case: auth succeeded but member creation failed)
+    const { error: insertError } = await supabase
+      .from('tno_members')
+      .insert({
+        member_id: user.id,
+        email: user.email || '',
+        handle: invitePreview?.invitee_name || null,
+      });
+    
+    if (insertError) {
+      // If insert fails due to duplicate, that's fine - member exists
+      if (!insertError.message.includes('duplicate')) {
+        console.error('Failed to create member:', insertError);
+        return false;
+      }
+    }
+    
+    return true;
+  }, [user, invitePreview]);
+
+  // Initial effect: fetch preview when no user
   useEffect(() => {
     if (!token) {
       setError('No invitation token provided');
@@ -86,14 +158,30 @@ export default function Join() {
       return;
     }
 
+    // Fetch preview for prefilling (runs before auth)
+    if (!previewLoaded) {
+      fetchInvitePreview();
+    }
+
     if (!user) {
       setStep('auth');
       return;
     }
 
-    // User is authenticated, try to claim the invite
-    claimInvite();
-  }, [token, user, authLoading]);
+    // User is authenticated, ensure member exists then claim
+    const tryClaimWithMember = async () => {
+      setStep('loading');
+      const memberExists = await ensureMemberExists();
+      if (memberExists) {
+        claimInvite();
+      } else {
+        setError('Failed to create member profile. Please try again.');
+        setStep('error');
+      }
+    };
+    
+    tryClaimWithMember();
+  }, [token, user, authLoading, previewLoaded, fetchInvitePreview, ensureMemberExists]);
 
   const claimInvite = async () => {
     if (!token) return;
@@ -216,6 +304,7 @@ export default function Join() {
     // After successful sign-in, the useEffect will detect user and trigger claimInvite
   };
 
+  // OPN3.008-5: Improved signup with graceful "already exists" handling
   const handleInlineSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -234,17 +323,35 @@ export default function Join() {
     setAuthSubmitting(false);
 
     if (error) {
-      if (error.message.includes('already registered')) {
-        toast.error('This email is already registered. Please sign in.');
+      // OPN3.008-5: Graceful handling of existing accounts
+      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+        toast.error(
+          <div className="space-y-2">
+            <p>This account already exists.</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full"
+              onClick={() => {
+                setActiveAuthTab('signin');
+                toast.dismiss();
+              }}
+            >
+              Switch to Sign In
+            </Button>
+          </div>,
+          { duration: 8000 }
+        );
+        // Auto-switch to sign in tab
         setActiveAuthTab('signin');
       } else {
         toast.error(error.message);
       }
     }
-    // After successful signup (with auto-confirm), user will be signed in and useEffect triggers claimInvite
+    // After successful signup (with auto-confirm), user will be signed in and useEffect triggers claim
   };
 
-  // Screen 8: Join Invitation (Auth step) - OPN3.008-2/3/4
+  // Screen 8: Join Invitation (Auth step) - OPN3.008-2/3/4/5
   if (step === 'auth') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -257,6 +364,12 @@ export default function Join() {
             <CardDescription>
               You are joining as the <strong>invited person</strong>.
             </CardDescription>
+            {/* OPN3.008-5: Show inviter context */}
+            {invitePreview?.is_valid && (
+              <p className="text-sm text-muted-foreground mt-2">
+                Invited by <strong>{invitePreview.inviter_handle || invitePreview.inviter_email}</strong>
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             {/* OPN3.008-3: Alpha persona switch notice */}
@@ -264,6 +377,16 @@ export default function Join() {
               <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                 <p className="text-sm text-amber-700 dark:text-amber-400">
                   <strong>Persona Switch Complete:</strong> You have been signed out of the inviter account.
+                </p>
+              </div>
+            )}
+
+            {/* OPN3.008-5: Alpha tip about prefilled data */}
+            {invitePreview?.is_valid && (invitePreview.invitee_name || invitePreview.invitee_email) && (
+              <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex gap-2">
+                <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  <strong>The inviter has provided starting information for you.</strong> You can accept the relationship now and update your own information later.
                 </p>
               </div>
             )}
@@ -287,6 +410,9 @@ export default function Join() {
                       onChange={(e) => setAuthHandle(e.target.value)}
                       maxLength={50}
                     />
+                    {invitePreview?.invitee_name && authHandle === invitePreview.invitee_name && (
+                      <p className="text-xs text-muted-foreground">Pre-filled from invitation</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-email">Email</Label>
@@ -298,6 +424,9 @@ export default function Join() {
                       onChange={(e) => setAuthEmail(e.target.value)}
                       required
                     />
+                    {invitePreview?.invitee_email && authEmail === invitePreview.invitee_email && (
+                      <p className="text-xs text-muted-foreground">Pre-filled from invitation</p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>

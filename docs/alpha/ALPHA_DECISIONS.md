@@ -172,9 +172,28 @@ Consider whether inline auth on the Join page provides a better UX for productio
 
 ---
 
+## Decision A-009: Invitation Join prefills data and ensures Member before claim
+
+**Context**  
+The invite claim RPC requires a valid Member row (FK constraint). Alpha testing revealed that the claim was attempted before member creation completed, causing FK violations. Additionally, inviter-provided invitee data was not visible until after claiming.
+
+**Alpha Choice**  
+The Join Invitation flow now:
+1. Fetches a preview of the invitation (via `tno_preview_invite` RPC) before authentication to prefill the auth form with inviter-provided name and email
+2. After successful authentication, explicitly ensures a Member row exists before calling the claim RPC
+3. Shows clear Alpha copy explaining that the inviter has provided starting information
+
+**Implication**  
+Auth forms are prefilled with inviter-proposed data. Member creation is guaranteed before claim. This maintains FK integrity while providing trust continuity (inviter proposes → invitee owns).
+
+**MVP Transition**  
+Consider whether prefill behavior should persist in production or if invitees should always enter their own information fresh.
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-008, A-009, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-010, A-011, …)
 
 - Decisions are never deleted or rewritten
 
@@ -184,4 +203,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.008-4
+End of v0.1 + OPN3.008-5
