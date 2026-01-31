@@ -282,9 +282,38 @@ Fully deprecate `tno_personal_cards`. Add CARD versioning, multiple instances pe
 
 ---
 
+## Decision A-014: Instance-level CARD sharing
+
+**Context**  
+OPN3.010-4 makes CARD sharing testable by ensuring share proposals reference actual member-owned CARD instances rather than just catalog types.
+
+**Alpha Choice**  
+Share proposals now reference specific member CARD instances:
+1. `tno_share_proposal_items.member_card_id` references the actual `tno_member_cards.id`
+2. The ShareBack UI shows the member's owned CARDs with their actual values
+3. Revocation operates on the shared instance, not the catalog type
+4. Recipients can see the actual data values being shared (e.g., "Email Contact (gerry@example.com)")
+
+**Implementation**  
+- Added `member_card_id` column to `tno_share_proposal_items`
+- Updated `tno_create_share_proposal` RPC to accept member_card_ids
+- ShareBack page fetches from `tno_member_cards` instead of `tno_card_catalog`
+- RelationshipDetail and Inbox show actual card data values alongside card type
+
+**Implication**  
+Sharing is now instance-scoped. A member shares "this specific email CARD" not "the concept of an email CARD." This enables:
+- Gerry shares Email CARD to Brad → Brad sees the actual email value
+- Gerry revokes that specific CARD → Brad loses access immediately
+- Relationship remains active, other shared CARDs unaffected
+
+**MVP Transition**  
+Support re-sharing previously revoked CARDs, CARD versioning (update a value, recipients see new version), and explicit consent for viewing updated values.
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-013, A-014, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-015, A-016, …)
 
 - Decisions are never deleted or rewritten
 
@@ -294,4 +323,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.010-3
+End of v0.1 + OPN3.010-4

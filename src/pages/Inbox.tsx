@@ -5,7 +5,12 @@ import { InvitationCard } from '@/components/trust/InvitationCard';
 import { ShareProposalCard } from '@/components/trust/ShareProposalCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
-import { Invitation, Card as CardType, Member, SharingScenario, ShareProposal } from '@/lib/types';
+import { Invitation, Card as CardType, Member, SharingScenario, ShareProposal, MemberCard } from '@/lib/types';
+
+// Extended card type with member card data for proposals
+interface ProposalCardWithData extends CardType {
+  memberCardData?: Record<string, unknown>;
+}
 import { Inbox as InboxIcon, Loader2, Send, Share2 } from 'lucide-react';
 
 export default function Inbox() {
@@ -15,7 +20,7 @@ export default function Inbox() {
   const [invitationCards, setInvitationCards] = useState<Record<string, CardType[]>>({});
   const [receivedProposals, setReceivedProposals] = useState<ShareProposal[]>([]);
   const [sentProposals, setSentProposals] = useState<ShareProposal[]>([]);
-  const [proposalCards, setProposalCards] = useState<Record<string, CardType[]>>({});
+  const [proposalCards, setProposalCards] = useState<Record<string, ProposalCardWithData[]>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -124,22 +129,26 @@ export default function Inbox() {
       .eq('from_member_id', user.id)
       .order('created_at', { ascending: false });
 
-    // Fetch cards for each proposal
+    // Fetch cards for each proposal - include member_card data
     const allProposals = [...(received || []), ...(sent || [])];
-    const cardsMap: Record<string, CardType[]> = {};
+    const cardsMap: Record<string, ProposalCardWithData[]> = {};
 
     for (const proposal of allProposals) {
       const { data: items } = await supabase
         .from('tno_share_proposal_items')
         .select(`
           position,
-          card:tno_card_catalog(*)
+          card:tno_card_catalog(*),
+          member_card:tno_member_cards(card_data)
         `)
         .eq('proposal_id', proposal.proposal_id)
         .order('position');
 
       if (items) {
-        cardsMap[proposal.proposal_id] = items.map(i => i.card as unknown as CardType);
+        cardsMap[proposal.proposal_id] = items.map(i => ({
+          ...(i.card as unknown as CardType),
+          memberCardData: (i.member_card as any)?.card_data || undefined,
+        }));
       }
     }
 
