@@ -29,7 +29,17 @@ export type AuditEventType =
   | 'share_proposal.created'
   | 'share_proposal.accepted'
   | 'share_proposal.declined'
-  | 'trust_loop.completed';
+  | 'trust_loop.completed'
+  | 'shared_card.revoked';
+
+// Extended Card type with revocation status (for UI display)
+export interface SharedCardItem {
+  card_id: string;
+  card: Card;
+  position: number;
+  revoked_at: string | null;
+  revoked_by_member_id: string | null;
+}
 
 export interface Member {
   member_id: string;

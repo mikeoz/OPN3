@@ -230,9 +230,33 @@ Share Back may be streamlined into the initial invitation flow, allowing bidirec
 
 ---
 
+## Decision A-012: Per-CARD revocation without relationship termination
+
+**Context**  
+OPN3.010 implements trust revocation mechanics. Members need to control data access granularly without destroying relationships.
+
+**Alpha Choice**  
+Revocation operates at the individual CARD level within accepted share proposals:
+1. A sharing member can revoke access to specific CARDs
+2. Revocation is immediate and removes recipient access
+3. Other shared CARDs remain accessible
+4. The underlying relationship remains active
+5. Both members can see the revocation status
+
+**Implication**  
+Trust decay is granular and does not require relationship termination. This supports real-world scenarios where data access may need adjustment while maintaining the connection context.
+
+**MVP Transition**  
+Consider adding:
+- Re-sharing flows to restore previously revoked CARDs
+- Bulk revocation options
+- Time-based expiration as an alternative to explicit revocation
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-012, A-013, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-013, A-014, …)
 
 - Decisions are never deleted or rewritten
 
@@ -242,4 +266,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.009-1
+End of v0.1 + OPN3.010-1
