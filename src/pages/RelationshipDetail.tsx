@@ -22,7 +22,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { Relationship, Member, SharingScenario, Card as CardType, CardShare } from '@/lib/types';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Users, Unlink, Calendar, Shield, Heart } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, Unlink, Calendar, Shield, Heart, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 export default function RelationshipDetail() {
@@ -276,7 +276,32 @@ export default function RelationshipDetail() {
             </CardContent>
           </Card>
 
-          {/* Actions */}
+          {/* Share Back Action (OPN3.009) */}
+          {isActive && (
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Share2 className="h-5 w-5 text-primary" />
+                  Share Back
+                </CardTitle>
+                <CardDescription>
+                  Propose CARDs to share with {otherMember?.handle || otherMember?.email}. 
+                  This is the second trust act — relationship alone does not grant data access.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  className="w-full"
+                  onClick={() => navigate(`/share-back/${relationship.relationship_id}`)}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Propose Share
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Terminate Actions */}
           {isActive && (
             <Card className="border-destructive/20">
               <CardHeader>

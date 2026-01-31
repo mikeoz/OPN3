@@ -12,6 +12,8 @@ import {
   UserCheck,
   CreditCard,
   Heart,
+  Share2,
+  CheckCircle,
   LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -99,6 +101,30 @@ const eventConfig: Record<AuditEventType, { icon: LucideIcon; label: string; col
     color: 'text-primary',
     bgColor: 'bg-primary/10',
   },
+  'share_proposal.created': {
+    icon: Share2,
+    label: 'Share proposal created',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+  },
+  'share_proposal.accepted': {
+    icon: Check,
+    label: 'Share proposal accepted',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
+  },
+  'share_proposal.declined': {
+    icon: X,
+    label: 'Share proposal declined',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
+  },
+  'trust_loop.completed': {
+    icon: CheckCircle,
+    label: 'Trust loop completed',
+    color: 'text-success',
+    bgColor: 'bg-success/10',
+  },
 };
 
 export function AuditEventItem({ event }: AuditEventItemProps) {
@@ -171,6 +197,22 @@ export function AuditEventItem({ event }: AuditEventItemProps) {
           ? `Relationship activated${inviterLabel ? ` ("${inviterLabel}")` : ''}`
           : `Relationship with ${actorName} activated`;
       }
+      case 'share_proposal.created':
+        return isActor 
+          ? `You proposed to share CARDs with ${subjectName}`
+          : `${actorName} proposed to share CARDs with you`;
+      case 'share_proposal.accepted':
+        return isActor 
+          ? `You accepted ${subjectName}'s share proposal`
+          : `${actorName} accepted your share proposal`;
+      case 'share_proposal.declined':
+        return isActor 
+          ? `You declined ${subjectName}'s share proposal`
+          : `${actorName} declined your share proposal`;
+      case 'trust_loop.completed':
+        return isActor 
+          ? `Trust loop with ${subjectName} completed`
+          : `Trust loop with ${actorName} completed`;
       default:
         return 'Unknown event';
     }

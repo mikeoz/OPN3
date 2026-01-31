@@ -10,6 +10,8 @@ export type CardShareStatus = 'offered' | 'accepted' | 'revoked';
 export type AcceptanceDecision = 'accepted' | 'rejected';
 export type RelationshipStatus = 'active' | 'terminated';
 export type InviteLinkStatus = 'pending' | 'claimed' | 'accepted' | 'revoked' | 'expired';
+export type ShareProposalStatus = 'pending' | 'accepted' | 'declined';
+
 export type AuditEventType = 
   | 'member.created'
   | 'invitation.sent'
@@ -23,7 +25,11 @@ export type AuditEventType =
   | 'personal_card.created'
   | 'personal_card.updated'
   | 'relationship_card.proposed'
-  | 'relationship_card.activated';
+  | 'relationship_card.activated'
+  | 'share_proposal.created'
+  | 'share_proposal.accepted'
+  | 'share_proposal.declined'
+  | 'trust_loop.completed';
 
 export interface Member {
   member_id: string;
@@ -169,8 +175,27 @@ export interface AuditEvent {
   invitation_id: string | null;
   card_share_id: string | null;
   relationship_id: string | null;
+  share_proposal_id: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
   actor_member?: Member;
   subject_member?: Member;
+}
+
+// OPN3.009: Share Proposals for post-relationship CARD sharing
+export interface ShareProposal {
+  proposal_id: string;
+  relationship_id: string;
+  from_member_id: string;
+  to_member_id: string;
+  scenario_id: string;
+  status: ShareProposalStatus;
+  message: string | null;
+  created_at: string;
+  responded_at: string | null;
+  note: string | null;
+  from_member?: Member;
+  to_member?: Member;
+  scenario?: SharingScenario;
+  cards?: Card[];
 }
