@@ -17,11 +17,19 @@ interface AppLayoutProps {
 }
 
 const navItems = [
-  { path: '/', label: 'Relationships', icon: Users },
-  { path: '/invite', label: 'Invite', icon: Send },
-  { path: '/inbox', label: 'Inbox', icon: Inbox },
-  { path: '/audit', label: 'Activity', icon: History },
+  { path: '/', label: 'Relationships', icon: Users, matchPaths: ['/', '/relationship'] },
+  { path: '/invite', label: 'Invite', icon: Send, matchPaths: ['/invite'] },
+  { path: '/inbox', label: 'Inbox', icon: Inbox, matchPaths: ['/inbox'] },
+  { path: '/audit', label: 'Activity', icon: History, matchPaths: ['/audit'] },
 ];
+
+function isNavItemActive(pathname: string, matchPaths: string[]): boolean {
+  return matchPaths.some(path => 
+    path === '/' 
+      ? pathname === '/' || pathname.startsWith('/relationship')
+      : pathname.startsWith(path)
+  );
+}
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { member, signOut } = useAuth();
@@ -47,7 +55,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = isNavItemActive(location.pathname, item.matchPaths);
               return (
                 <Link
                   key={item.path}
@@ -82,7 +90,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 backdrop-blur">
         <div className="flex justify-around py-2">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isNavItemActive(location.pathname, item.matchPaths);
             return (
               <Link
                 key={item.path}
