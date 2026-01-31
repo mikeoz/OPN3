@@ -19,7 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function Invite() {
-  const { user, member } = useAuth();
+  const { user, member, signOut } = useAuth();
   const navigate = useNavigate();
   
   const [members, setMembers] = useState<Member[]>([]);
@@ -304,10 +304,16 @@ export default function Invite() {
     window.open(generatedLink, '_blank');
   };
 
-  // OPN3.008-2: Continue as invitee in same session for Alpha testing
-  const handleContinueAsInvitee = () => {
-    // Navigate to join link in same window for persona switch
-    window.location.href = generatedLink;
+  // OPN3.008-3: Continue as invitee with auth reset for Alpha persona switching
+  const handleContinueAsInvitee = async () => {
+    // Sign out the current inviter session first
+    await signOut();
+    toast.info('Signed out inviter session for Alpha persona switch');
+    
+    // Navigate to join link with alpha persona switch flag
+    const joinUrl = new URL(generatedLink);
+    joinUrl.searchParams.set('alpha_switch', 'true');
+    window.location.href = joinUrl.toString();
   };
 
   const handleResetEmailForm = () => {
@@ -509,11 +515,11 @@ export default function Invite() {
                     Continue as Invitee (Alpha Test)
                   </Button>
 
-                  {/* Alpha Test Tip */}
+                  {/* Alpha Test Tip - OPN3.008-3 */}
                   <Alert className="border-primary/30 bg-primary/5">
                     <Info className="h-4 w-4 text-primary" />
                     <AlertDescription className="text-sm">
-                      <strong>Alpha Test Tip:</strong> Click "Continue as Invitee" above to complete the invitation flow as the receiving person. You will switch to the invitee perspective.
+                      <strong>Alpha Test Tip:</strong> Click "Continue as Invitee" above to complete the invitation flow as the receiving person. This will <strong>sign you out</strong> of the inviter account so you can authenticate as the invitee.
                     </AlertDescription>
                   </Alert>
 

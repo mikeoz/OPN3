@@ -135,9 +135,30 @@ Remove all Alpha Test Tips, persona switch buttons, and disabled-feature tooltip
 
 ---
 
+## Decision A-007: Alpha persona switch requires auth reset
+
+**Context**  
+Alpha testing requires one tester to play both inviter and invitee roles. Backend self-claim protections correctly block an inviter from claiming their own invitation.
+
+**Alpha Choice**  
+When clicking "Continue as Invitee (Alpha Test)", the system:
+1. Explicitly signs out the current authenticated user (inviter)
+2. Redirects to the invitation join URL with an `alpha_switch=true` flag
+3. Displays a clear notice that the inviter session was ended intentionally
+
+The Join page (Screen 8) shows a "Persona Switch Complete" notice when this flag is present, guiding the tester to authenticate as a different user.
+
+**Implication**  
+This is a testing convenience that does not bypass or weaken backend self-claim protections. The auth reset forces the tester to authenticate as a different user before claiming the invitation.
+
+**MVP Transition**  
+Remove the `alpha_switch` parameter handling and the auth reset behavior. In production, invitations will be delivered externally and self-claim protections will simply block invalid attempts without special UX handling.
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-006, A-007, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-007, A-008, …)
 
 - Decisions are never deleted or rewritten
 
@@ -147,4 +168,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.008-2
+End of v0.1 + OPN3.008-3
