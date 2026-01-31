@@ -681,6 +681,7 @@ export type Database = {
         Returns: string
       }
       tno_claim_invite: { Args: { p_token: string }; Returns: Json }
+      tno_preview_invite: { Args: { p_token: string }; Returns: Json }
       tno_revoke_invite: {
         Args: { p_invite_link_id: string; p_reason?: string }
         Returns: boolean
