@@ -26,7 +26,9 @@ import { cn } from '@/lib/utils';
 interface SharedCard {
   proposalId: string;
   cardId: string;
+  memberCardId: string | null;
   card: CardType;
+  cardData: Record<string, unknown> | null;
   sharedAt: string;
   revokedAt: string | null;
   isActive: boolean;
@@ -73,6 +75,18 @@ function CardRow({ card, canRevoke, otherMemberName, onRevoke }: CardRowProps) {
     }
   };
 
+  // Get display value from card data
+  const getCardDisplayValue = (): string | null => {
+    if (!card.cardData) return null;
+    const cardKey = card.card?.card_key;
+    if (cardKey === 'identity.basic') return card.cardData.name as string || null;
+    if (cardKey === 'contact.email') return card.cardData.email as string || null;
+    if (cardKey === 'contact.phone') return card.cardData.phone as string || null;
+    return null;
+  };
+
+  const displayValue = getCardDisplayValue();
+
   return (
     <div 
       className={cn(
@@ -97,6 +111,9 @@ function CardRow({ card, canRevoke, otherMemberName, onRevoke }: CardRowProps) {
             >
               {card.isActive ? 'Active' : 'Revoked'}
             </Badge>
+            {displayValue && (
+              <span className="text-sm text-primary font-medium">{displayValue}</span>
+            )}
           </div>
           
           <div className="text-xs text-muted-foreground mt-1 space-x-3">

@@ -14,11 +14,13 @@ import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Users, Calendar, Shield, Heart, Share2 } from 'lucide-react';
 import { format } from 'date-fns';
 
-// Shared card with proposal context
+// Shared card with proposal context and member card instance data
 interface SharedCard {
   proposalId: string;
   cardId: string;
+  memberCardId: string | null;
   card: CardType;
+  cardData: Record<string, unknown> | null;
   sharedAt: string;
   revokedAt: string | null;
   isActive: boolean;
@@ -92,10 +94,12 @@ export default function RelationshipDetail() {
             .from('tno_share_proposal_items')
             .select(`
               card_id,
+              member_card_id,
               position,
               revoked_at,
               revoked_by_member_id,
-              card:tno_card_catalog(*)
+              card:tno_card_catalog(*),
+              member_card:tno_member_cards(card_data)
             `)
             .eq('proposal_id', proposal.proposal_id)
             .order('position');
@@ -104,7 +108,9 @@ export default function RelationshipDetail() {
             const mappedCards: SharedCard[] = items.map(item => ({
               proposalId: proposal.proposal_id,
               cardId: item.card_id,
+              memberCardId: item.member_card_id,
               card: item.card as unknown as CardType,
+              cardData: (item.member_card as any)?.card_data || null,
               sharedAt: proposal.created_at,
               revokedAt: item.revoked_at,
               isActive: !item.revoked_at,

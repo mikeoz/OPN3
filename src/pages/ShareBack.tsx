@@ -6,11 +6,21 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
-import type { Relationship, Member, SharingScenario, Card as CardType } from '@/lib/types';
+import type { Relationship, Member, SharingScenario, MemberCard } from '@/lib/types';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2, Share2, Send, Users, CheckCircle } from 'lucide-react';
+
+// Member's owned CARD instance for selection
+interface OwnedCardInstance {
+  id: string;
+  catalogCardId: string;
+  title: string;
+  summary: string;
+  cardKey: string;
+  cardData: Record<string, unknown>;
+  label: string | null;
+}
 
 export default function ShareBack() {
   const { relationshipId } = useParams<{ relationshipId: string }>();
@@ -19,9 +29,9 @@ export default function ShareBack() {
   const navigate = useNavigate();
 
   const [relationship, setRelationship] = useState<Relationship | null>(null);
-  const [availableCards, setAvailableCards] = useState<CardType[]>([]);
+  const [myCards, setMyCards] = useState<OwnedCardInstance[]>([]);
   const [scenarios, setScenarios] = useState<SharingScenario[]>([]);
-  const [selectedCards, setSelectedCards] = useState<string[]>([]);
+  const [selectedCardIds, setSelectedCardIds] = useState<string[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<string>('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -67,15 +77,30 @@ export default function ShareBack() {
       scenario: rel.scenario as SharingScenario,
     } as Relationship);
 
-    // Fetch available cards from catalog
-    const { data: cards } = await supabase
-      .from('tno_card_catalog')
-      .select('*')
-      .eq('status', 'active')
-      .order('title');
+    // Fetch MY owned card instances (from tno_member_cards, not catalog)
+    const { data: memberCards } = await supabase
+      .from('tno_member_cards')
+      .select(`
+        id,
+        catalog_card_id,
+        card_data,
+        label,
+        catalog_card:tno_card_catalog(card_id, card_key, title, summary)
+      `)
+      .eq('member_id', user.id)
+      .eq('label', 'Primary');
 
-    if (cards) {
-      setAvailableCards(cards as CardType[]);
+    if (memberCards) {
+      const ownedCards: OwnedCardInstance[] = memberCards.map((mc: any) => ({
+        id: mc.id,
+        catalogCardId: mc.catalog_card_id,
+        title: mc.catalog_card?.title || 'Unknown',
+        summary: mc.catalog_card?.summary || '',
+        cardKey: mc.catalog_card?.card_key || '',
+        cardData: mc.card_data || {},
+        label: mc.label,
+      }));
+      setMyCards(ownedCards);
     }
 
     // Fetch active scenarios
@@ -99,13 +124,21 @@ export default function ShareBack() {
   };
 
   const toggleCard = (cardId: string) => {
-    setSelectedCards((prev) =>
+    setSelectedCardIds((prev) =>
       prev.includes(cardId) ? prev.filter((id) => id !== cardId) : [...prev, cardId]
     );
   };
 
+  // Get display value from card data
+  const getCardDisplayValue = (card: OwnedCardInstance): string => {
+    if (card.cardKey === 'identity.basic') return card.cardData.name as string || '';
+    if (card.cardKey === 'contact.email') return card.cardData.email as string || '';
+    if (card.cardKey === 'contact.phone') return card.cardData.phone as string || '';
+    return '';
+  };
+
   const handleSubmit = async () => {
-    if (!relationship || !user || selectedCards.length === 0 || !selectedScenario) {
+    if (!relationship || !user || selectedCardIds.length === 0 || !selectedScenario) {
       toast.error('Please select at least one CARD to share');
       return;
     }
@@ -117,11 +150,12 @@ export default function ShareBack() {
           ? relationship.member_b_id
           : relationship.member_a_id;
 
+      // Pass member_card_ids (instance IDs), not catalog card IDs
       const { error } = await supabase.rpc('tno_create_share_proposal', {
         p_relationship_id: relationship.relationship_id,
         p_to_member_id: otherMemberId,
         p_scenario_id: selectedScenario,
-        p_card_ids: selectedCards,
+        p_member_card_ids: selectedCardIds,
         p_message: message || null,
       });
 
@@ -255,36 +289,42 @@ export default function ShareBack() {
         {/* Card selection */}
         <Card>
           <CardHeader>
-            <CardTitle>Select CARDs to Share</CardTitle>
+            <CardTitle>Select Your CARDs to Share</CardTitle>
             <CardDescription>
-              Choose which CARDs you want to propose sharing. The recipient must accept.
+              Choose which of your owned CARDs you want to propose sharing. The recipient must accept.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {availableCards.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No CARDs available to share.</p>
+            {myCards.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No CARDs available to share. Please set up your identity CARDs first.</p>
             ) : (
               <div className="space-y-3">
-                {availableCards.map((card) => (
+                {myCards.map((card) => {
+                  const displayValue = getCardDisplayValue(card);
+                  return (
                   <div
-                    key={card.card_id}
+                    key={card.id}
                     className={`flex items-start gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
-                      selectedCards.includes(card.card_id)
+                      selectedCardIds.includes(card.id)
                         ? 'bg-primary/5 border-primary/30'
                         : 'hover:bg-muted/50'
                     }`}
-                    onClick={() => toggleCard(card.card_id)}
+                    onClick={() => toggleCard(card.id)}
                   >
                     <Checkbox
-                      checked={selectedCards.includes(card.card_id)}
-                      onCheckedChange={() => toggleCard(card.card_id)}
+                      checked={selectedCardIds.includes(card.id)}
+                      onCheckedChange={() => toggleCard(card.id)}
                     />
                     <div className="flex-1">
                       <p className="font-medium">{card.title}</p>
                       <p className="text-sm text-muted-foreground">{card.summary}</p>
+                      {displayValue && (
+                        <p className="text-sm text-primary mt-1">Your value: {displayValue}</p>
+                      )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -316,7 +356,7 @@ export default function ShareBack() {
         {/* Submit */}
         <Button
           onClick={handleSubmit}
-          disabled={submitting || selectedCards.length === 0}
+          disabled={submitting || selectedCardIds.length === 0}
           className="w-full"
           size="lg"
         >

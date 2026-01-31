@@ -11,11 +11,26 @@ import { Share2, Check, X, Loader2, Users, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import type { ShareProposal, Card as CardType, Member, SharingScenario } from '@/lib/types';
 
+// Extended card type with member card data
+interface ProposalCard extends CardType {
+  memberCardData?: Record<string, unknown>;
+}
+
 interface ShareProposalCardProps {
   proposal: ShareProposal;
-  cards: CardType[];
+  cards: ProposalCard[];
   isReceived: boolean;
   onAction?: () => void;
+}
+
+// Helper to get display value from card data
+function getCardDisplayValue(card: ProposalCard): string | null {
+  if (!card.memberCardData) return null;
+  const cardKey = card.card_key;
+  if (cardKey === 'identity.basic') return card.memberCardData.name as string || null;
+  if (cardKey === 'contact.email') return card.memberCardData.email as string || null;
+  if (cardKey === 'contact.phone') return card.memberCardData.phone as string || null;
+  return null;
 }
 
 export function ShareProposalCard({ proposal, cards, isReceived, onAction }: ShareProposalCardProps) {
@@ -101,13 +116,21 @@ export function ShareProposalCard({ proposal, cards, isReceived, onAction }: Sha
           </div>
         )}
 
-        {/* Cards being shared */}
+        {/* Cards being shared - show actual values */}
         <div>
           <p className="text-sm font-medium mb-2">CARDs {isReceived ? 'being offered' : 'you offered'}:</p>
-          <div className="flex flex-wrap gap-2">
-            {cards.map((card) => (
-              <CardBadge key={card.card_id} card={card} />
-            ))}
+          <div className="space-y-2">
+            {cards.map((card) => {
+              const displayValue = getCardDisplayValue(card);
+              return (
+                <div key={card.card_id} className="flex items-center gap-2">
+                  <CardBadge card={card} />
+                  {displayValue && (
+                    <span className="text-sm text-primary font-medium">({displayValue})</span>
+                  )}
+                </div>
+              );
+            })}
             {cards.length === 0 && (
               <span className="text-sm text-muted-foreground">No CARDs</span>
             )}
