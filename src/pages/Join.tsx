@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,22 @@ import { CardBadge } from '@/components/trust/CardBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { Card as CardType, PersonalCardData, RelationshipCardData } from '@/lib/types';
 import { toast } from 'sonner';
-import { Loader2, UserPlus, Shield, ArrowRight, CheckCircle2, AlertCircle, Heart, LogIn } from 'lucide-react';
+import { Loader2, UserPlus, Shield, ArrowRight, CheckCircle2, AlertCircle, Heart, LogIn, Info } from 'lucide-react';
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Please enter a valid email address');
 const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
+
+// Preview data fetched before claiming (no auth required)
+interface InvitePreview {
+  inviter_handle: string | null;
+  inviter_email: string;
+  invitee_name: string | null;
+  invitee_email: string;
+  scenario_title: string;
+  is_valid: boolean;
+  error_message?: string;
+}
 
 interface ClaimResult {
   invite_link_id: string;
