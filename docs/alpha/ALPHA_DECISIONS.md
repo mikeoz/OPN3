@@ -156,9 +156,25 @@ Remove the `alpha_switch` parameter handling and the auth reset behavior. In pro
 
 ---
 
+## Decision A-008: Inline authentication on Join Invitation screen
+
+**Context**  
+Alpha testing requires seamless persona switching. Redirecting to a separate Auth page with complex query parameters caused navigation failures and test dead-ends.
+
+**Alpha Choice**  
+The Join Invitation screen (Screen 8) now includes inline authentication forms for both "Create Account" and "Sign In". Account creation automatically authenticates the user and continues directly to invitation acceptance without a redirect.
+
+**Implication**  
+The Join page handles authentication internally, avoiding URL parameter parsing issues. The user experience is streamlined for Alpha testing where quick persona switching is essential.
+
+**MVP Transition**  
+Consider whether inline auth on the Join page provides a better UX for production users, or whether integration with the main Auth flow (with proper redirect handling) is preferred.
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-007, A-008, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-008, A-009, …)
 
 - Decisions are never deleted or rewritten
 
@@ -168,4 +184,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.008-3
+End of v0.1 + OPN3.008-4

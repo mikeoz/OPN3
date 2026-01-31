@@ -5,11 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CardBadge } from '@/components/trust/CardBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { Card as CardType, PersonalCardData, RelationshipCardData } from '@/lib/types';
 import { toast } from 'sonner';
-import { Loader2, UserPlus, Shield, ArrowRight, CheckCircle2, AlertCircle, Heart } from 'lucide-react';
+import { Loader2, UserPlus, Shield, ArrowRight, CheckCircle2, AlertCircle, Heart, LogIn } from 'lucide-react';
+import { z } from 'zod';
+
+const emailSchema = z.string().email('Please enter a valid email address');
+const passwordSchema = z.string().min(6, 'Password must be at least 6 characters');
 
 interface ClaimResult {
   invite_link_id: string;
@@ -32,7 +37,7 @@ interface ClaimResult {
 type JoinStep = 'loading' | 'auth' | 'claim' | 'edit' | 'success' | 'error';
 
 export default function Join() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -51,6 +56,13 @@ export default function Join() {
   const [formOrg, setFormOrg] = useState('');
   const [formTitle, setFormTitle] = useState('');
   const [processing, setProcessing] = useState(false);
+
+  // Auth form state - OPN3.008-4
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authHandle, setAuthHandle] = useState('');
+  const [authSubmitting, setAuthSubmitting] = useState(false);
+  const [activeAuthTab, setActiveAuthTab] = useState<string>('signup');
 
   useEffect(() => {
     if (!token) {
@@ -169,7 +181,59 @@ export default function Join() {
     );
   }
 
-  // Screen 8: Join Invitation (Auth step) - OPN3.008-2/3
+  // Inline auth handlers - OPN3.008-4
+  const handleInlineSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(authEmail);
+      passwordSchema.parse(authPassword);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+
+    setAuthSubmitting(true);
+    const { error } = await signIn(authEmail, authPassword);
+    setAuthSubmitting(false);
+
+    if (error) {
+      toast.error(error.message);
+    }
+    // After successful sign-in, the useEffect will detect user and trigger claimInvite
+  };
+
+  const handleInlineSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      emailSchema.parse(authEmail);
+      passwordSchema.parse(authPassword);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        toast.error(err.errors[0].message);
+        return;
+      }
+    }
+
+    setAuthSubmitting(true);
+    const { error } = await signUp(authEmail, authPassword, authHandle || undefined);
+    setAuthSubmitting(false);
+
+    if (error) {
+      if (error.message.includes('already registered')) {
+        toast.error('This email is already registered. Please sign in.');
+        setActiveAuthTab('signin');
+      } else {
+        toast.error(error.message);
+      }
+    }
+    // After successful signup (with auto-confirm), user will be signed in and useEffect triggers claimInvite
+  };
+
+  // Screen 8: Join Invitation (Auth step) - OPN3.008-2/3/4
   if (step === 'auth') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -180,7 +244,7 @@ export default function Join() {
             </div>
             <CardTitle>Join Invitation</CardTitle>
             <CardDescription>
-              You are joining as the <strong>invited person</strong>. To continue, sign in or create a new account.
+              You are joining as the <strong>invited person</strong>.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -188,40 +252,107 @@ export default function Join() {
             {isAlphaSwitch && (
               <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg">
                 <p className="text-sm text-amber-700 dark:text-amber-400">
-                  <strong>Persona Switch Complete:</strong> You have been signed out of the inviter account. You are no longer signed in as the person who created this invitation.
+                  <strong>Persona Switch Complete:</strong> You have been signed out of the inviter account.
                 </p>
               </div>
             )}
 
-            {/* Two clear buttons: Sign In and Create Account */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                variant="outline"
-                className="w-full" 
-                onClick={() => navigate(`/auth?redirect=/join?token=${token}${isAlphaSwitch ? '&alpha_switch=true' : ''}&mode=signin`)}
-              >
-                Sign In
-              </Button>
-              <Button 
-                className="w-full" 
-                onClick={() => navigate(`/auth?redirect=/join?token=${token}${isAlphaSwitch ? '&alpha_switch=true' : ''}&mode=signup`)}
-              >
-                Create Account
-              </Button>
-            </div>
+            {/* Inline Auth Tabs - OPN3.008-4 */}
+            <Tabs value={activeAuthTab} onValueChange={setActiveAuthTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="signup">Create Account</TabsTrigger>
+                <TabsTrigger value="signin">Sign In</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="signup" className="mt-4">
+                <form onSubmit={handleInlineSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-handle">Display Name (optional)</Label>
+                    <Input
+                      id="signup-handle"
+                      type="text"
+                      placeholder="Your name"
+                      value={authHandle}
+                      onChange={(e) => setAuthHandle(e.target.value)}
+                      maxLength={50}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-email">Email</Label>
+                    <Input
+                      id="signup-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-password">Password</Label>
+                    <Input
+                      id="signup-password"
+                      type="password"
+                      placeholder="At least 6 characters"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={authSubmitting}>
+                    {authSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Create Account & Continue
+                  </Button>
+                </form>
+                {/* OPN3.008-4: Inline copy update */}
+                <p className="text-xs text-muted-foreground text-center mt-3">
+                  Your account will be created and you will continue automatically.
+                </p>
+              </TabsContent>
+
+              <TabsContent value="signin" className="mt-4">
+                <form onSubmit={handleInlineSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="you@example.com"
+                      value={authEmail}
+                      onChange={(e) => setAuthEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={authPassword}
+                      onChange={(e) => setAuthPassword(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button type="submit" className="w-full" disabled={authSubmitting}>
+                    {authSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    <LogIn className="h-4 w-4 mr-2" />
+                    Sign In & Continue
+                  </Button>
+                </form>
+              </TabsContent>
+            </Tabs>
             
             {/* Alpha Test Tip */}
             <div className="p-3 bg-primary/5 border border-primary/30 rounded-lg">
               <p className="text-xs text-muted-foreground">
                 <strong className="text-foreground">Alpha Test Tip:</strong> {isAlphaSwitch 
-                  ? 'Sign in as your invitee test account, or create a new account to act as the invited person.'
+                  ? 'Create a new account to act as the invited person, or sign in if you already have an invitee test account.'
                   : 'If you have not created the invitee test account, choose Create Account. Otherwise, choose Sign In.'}
               </p>
             </div>
-            
-            <p className="text-xs text-center text-muted-foreground">
-              Once authenticated, you'll be able to review and accept this invitation.
-            </p>
           </CardContent>
         </Card>
       </div>
