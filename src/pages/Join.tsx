@@ -541,20 +541,20 @@ export default function Join() {
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             
-            {/* Alpha next step: Trust Revocation (OPN3.010) - OPN3.009-C boundary */}
+            {/* Alpha next step: Lifecycle Management (OPN3.011) - OPN3.010-C boundary */}
             <div className="p-4 bg-primary/5 border border-primary/30 rounded-lg space-y-3">
-              <p className="text-sm font-medium text-center">OPN3.009 Complete — Next Phase</p>
+              <p className="text-sm font-medium text-center">OPN3.010 Complete — Next Phase</p>
               <Button 
                 variant="outline" 
                 className="w-full"
                 onClick={() => navigate('/invite')}
               >
-                Begin OPN3.010: Trust Revocation (Alpha)
+                Begin OPN3.011 (Placeholder)
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
               <p className="text-xs text-muted-foreground text-center">
-                Share Back is now complete.
-                Trust revocation and lifecycle integrity are part of the next thread.
+                Trust Revocation is now complete.
+                Lifecycle management will be part of the next thread.
               </p>
             </div>
           </CardContent>

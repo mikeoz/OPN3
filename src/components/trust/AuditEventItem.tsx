@@ -125,6 +125,12 @@ const eventConfig: Record<AuditEventType, { icon: LucideIcon; label: string; col
     color: 'text-success',
     bgColor: 'bg-success/10',
   },
+  'shared_card.revoked': {
+    icon: Unlink,
+    label: 'Shared CARD revoked',
+    color: 'text-destructive',
+    bgColor: 'bg-destructive/10',
+  },
 };
 
 export function AuditEventItem({ event }: AuditEventItemProps) {
@@ -213,6 +219,12 @@ export function AuditEventItem({ event }: AuditEventItemProps) {
         return isActor 
           ? `Trust loop with ${subjectName} completed`
           : `Trust loop with ${actorName} completed`;
+      case 'shared_card.revoked': {
+        const cardTitle = (event.metadata as Record<string, unknown>)?.card_title as string | undefined;
+        return isActor 
+          ? `You revoked ${subjectName}'s access to ${cardTitle || 'a CARD'}`
+          : `${actorName} revoked your access to ${cardTitle || 'a CARD'}`;
+      }
       default:
         return 'Unknown event';
     }

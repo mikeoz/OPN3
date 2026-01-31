@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { StatusBadge } from '@/components/trust/StatusBadge';
 import { CardBadge } from '@/components/trust/CardBadge';
+import { SharedCardsList } from '@/components/trust/SharedCardsList';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -20,10 +21,19 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
-import { Relationship, Member, SharingScenario, Card as CardType, CardShare } from '@/lib/types';
+import { Relationship, Member, SharingScenario, Card as CardType, CardShare, SharedCardItem } from '@/lib/types';
 import { toast } from 'sonner';
-import { ArrowLeft, Loader2, Users, Unlink, Calendar, Shield, Heart, Share2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Users, Unlink, Calendar, Shield, Heart, Share2, FileKey2 } from 'lucide-react';
 import { format } from 'date-fns';
+
+// Accepted share proposals with their cards
+interface AcceptedShareProposal {
+  proposal_id: string;
+  from_member_id: string;
+  to_member_id: string;
+  status: string;
+  cards: SharedCardItem[];
+}
 
 export default function RelationshipDetail() {
   const { id } = useParams<{ id: string }>();
@@ -32,17 +42,12 @@ export default function RelationshipDetail() {
   
   const [relationship, setRelationship] = useState<Relationship | null>(null);
   const [cards, setCards] = useState<CardType[]>([]);
+  const [acceptedProposals, setAcceptedProposals] = useState<AcceptedShareProposal[]>([]);
   const [loading, setLoading] = useState(true);
   const [revoking, setRevoking] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
 
-  useEffect(() => {
-    if (id && user) {
-      fetchRelationship();
-    }
-  }, [id, user]);
-
-  const fetchRelationship = async () => {
+  const fetchRelationship = useCallback(async () => {
     if (!id || !user) return;
 
     const { data } = await supabase
@@ -74,6 +79,50 @@ export default function RelationshipDetail() {
         .eq('card_share_id', data.created_from_card_share_id)
         .order('position');
 
+      // Fetch accepted share proposals for this relationship
+      const { data: proposals } = await supabase
+        .from('tno_share_proposals')
+        .select(`
+          proposal_id,
+          from_member_id,
+          to_member_id,
+          status
+        `)
+        .eq('relationship_id', id)
+        .eq('status', 'accepted');
+
+      // For each accepted proposal, fetch its items with revocation status
+      const proposalsWithCards: AcceptedShareProposal[] = [];
+      if (proposals) {
+        for (const proposal of proposals) {
+          const { data: items } = await supabase
+            .from('tno_share_proposal_items')
+            .select(`
+              card_id,
+              position,
+              revoked_at,
+              revoked_by_member_id,
+              card:tno_card_catalog(*)
+            `)
+            .eq('proposal_id', proposal.proposal_id)
+            .order('position');
+
+          if (items) {
+            proposalsWithCards.push({
+              ...proposal,
+              cards: items.map(item => ({
+                card_id: item.card_id,
+                position: item.position,
+                revoked_at: item.revoked_at,
+                revoked_by_member_id: item.revoked_by_member_id,
+                card: item.card as unknown as CardType,
+              })),
+            });
+          }
+        }
+      }
+      setAcceptedProposals(proposalsWithCards);
+
       setRelationship({
         ...data,
         other_member: member as Member,
@@ -87,7 +136,13 @@ export default function RelationshipDetail() {
     }
 
     setLoading(false);
-  };
+  }, [id, user]);
+
+  useEffect(() => {
+    if (id && user) {
+      fetchRelationship();
+    }
+  }, [id, user, fetchRelationship]);
 
   const handleRevoke = async () => {
     if (!relationship || !user) return;
@@ -167,6 +222,7 @@ export default function RelationshipDetail() {
 
   const otherMember = relationship.other_member;
   const isActive = relationship.status === 'active';
+  const otherMemberName = otherMember?.handle || otherMember?.email || 'Unknown';
 
   return (
     <AppLayout>
@@ -242,7 +298,7 @@ export default function RelationshipDetail() {
                 </p>
               </div>
               <div>
-                <p className="text-sm font-medium mb-2">Shared CARDs:</p>
+                <p className="text-sm font-medium mb-2">Initial Shared CARDs:</p>
                 <div className="flex flex-wrap gap-2">
                   {cards.map((card) => (
                     <CardBadge key={card.card_id} card={card} />
@@ -251,6 +307,44 @@ export default function RelationshipDetail() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Shared CARDs from Share Back proposals (OPN3.010) */}
+          {acceptedProposals.length > 0 && (
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileKey2 className="h-5 w-5 text-primary" />
+                  Shared CARDs (Trust Loop)
+                </CardTitle>
+                <CardDescription>
+                  CARDs shared through accepted Share Back proposals. 
+                  You can revoke access to individual CARDs without terminating the relationship.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {acceptedProposals.map((proposal) => {
+                  const isSharer = proposal.from_member_id === user?.id;
+                  const direction = isSharer ? 'You shared with' : 'Shared by';
+                  const partnerName = isSharer ? otherMemberName : otherMemberName;
+                  
+                  return (
+                    <div key={proposal.proposal_id} className="space-y-3">
+                      <p className="text-sm text-muted-foreground">
+                        {direction} {partnerName}
+                      </p>
+                      <SharedCardsList
+                        proposalId={proposal.proposal_id}
+                        cards={proposal.cards}
+                        isSharer={isSharer}
+                        otherMemberName={otherMemberName}
+                        onRevoke={fetchRelationship}
+                      />
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
 
           {/* Timeline */}
           <Card>
@@ -285,7 +379,7 @@ export default function RelationshipDetail() {
                   Share Back
                 </CardTitle>
                 <CardDescription>
-                  Propose CARDs to share with {otherMember?.handle || otherMember?.email}. 
+                  Propose CARDs to share with {otherMemberName}. 
                   This is the second trust act — relationship alone does not grant data access.
                 </CardDescription>
               </CardHeader>
@@ -337,7 +431,7 @@ export default function RelationshipDetail() {
                       <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                       <AlertDialogDescription>
                         This will permanently terminate your relationship with{' '}
-                        <strong>{otherMember?.handle || otherMember?.email}</strong>. 
+                        <strong>{otherMemberName}</strong>. 
                         This action will be recorded in the audit log.
                       </AlertDialogDescription>
                     </AlertDialogHeader>

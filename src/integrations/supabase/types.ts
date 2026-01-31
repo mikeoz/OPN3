@@ -659,16 +659,22 @@ export type Database = {
           card_id: string
           position: number
           proposal_id: string
+          revoked_at: string | null
+          revoked_by_member_id: string | null
         }
         Insert: {
           card_id: string
           position?: number
           proposal_id: string
+          revoked_at?: string | null
+          revoked_by_member_id?: string | null
         }
         Update: {
           card_id?: string
           position?: number
           proposal_id?: string
+          revoked_at?: string | null
+          revoked_by_member_id?: string | null
         }
         Relationships: [
           {
@@ -684,6 +690,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tno_share_proposals"
             referencedColumns: ["proposal_id"]
+          },
+          {
+            foreignKeyName: "tno_share_proposal_items_revoked_by_member_id_fkey"
+            columns: ["revoked_by_member_id"]
+            isOneToOne: false
+            referencedRelation: "tno_members"
+            referencedColumns: ["member_id"]
           },
         ]
       }
@@ -815,6 +828,10 @@ export type Database = {
         Args: { p_invite_link_id: string; p_reason?: string }
         Returns: boolean
       }
+      tno_revoke_shared_card: {
+        Args: { p_card_id: string; p_proposal_id: string; p_reason?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       acceptance_decision: "accepted" | "rejected"
@@ -836,6 +853,7 @@ export type Database = {
         | "share_proposal.accepted"
         | "share_proposal.declined"
         | "trust_loop.completed"
+        | "shared_card.revoked"
       card_share_status: "offered" | "accepted" | "revoked"
       card_status: "active" | "deprecated"
       card_type: "standard"
@@ -1002,6 +1020,7 @@ export const Constants = {
         "share_proposal.accepted",
         "share_proposal.declined",
         "trust_loop.completed",
+        "shared_card.revoked",
       ],
       card_share_status: ["offered", "accepted", "revoked"],
       card_status: ["active", "deprecated"],
