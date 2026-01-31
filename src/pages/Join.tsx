@@ -541,19 +541,20 @@ export default function Join() {
               <ArrowRight className="h-4 w-4 ml-2" />
             </Button>
             
-            {/* Alpha next step: Share back */}
+            {/* Alpha next step: Share back (OPN3.009) - OPN3.008-7 boundary */}
             <div className="p-4 bg-primary/5 border border-primary/30 rounded-lg space-y-3">
-              <p className="text-sm font-medium text-center">What's Next?</p>
+              <p className="text-sm font-medium text-center">OPN3.008 Complete — Next Phase</p>
               <Button 
                 variant="outline" 
                 className="w-full"
                 onClick={() => navigate('/invite')}
               >
-                Continue to Share Back (Alpha)
+                Begin OPN3.009: Share Back (Alpha)
                 <ArrowRight className="h-4 w-4 ml-2" />
               </Button>
               <p className="text-xs text-muted-foreground text-center">
-                In the full app, you would share CARDs back to complete the trust loop.
+                Relationship acceptance is the terminal state for OPN3.008.
+                Share-back and CARD exchange are part of the next thread.
               </p>
             </div>
           </CardContent>
