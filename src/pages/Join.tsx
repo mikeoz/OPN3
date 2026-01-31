@@ -258,32 +258,43 @@ export default function Join() {
           </p>
         </div>
 
-        {/* Proposed Relationship CARD (OPN3.008) */}
+        {/* Proposed Relationship - Clarified wording (OPN3.008-1) */}
         {claimData?.relationship_card_json && (
-          <Card className="border-primary/50">
+          <Card className="border-primary/50 bg-primary/5">
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <Heart className="h-5 w-5 text-primary" />
-                Proposed Relationship
+                Review Proposed Relationship
               </CardTitle>
               <CardDescription>
-                {claimData?.inviter.handle || claimData?.inviter.email} has proposed the following relationship
+                {claimData?.inviter.handle || claimData?.inviter.email} wants to call you:
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium">{claimData?.inviter.handle || 'Inviter'}:</span>
-                  <span className="text-primary">{claimData.relationship_card_json.inviter_label}</span>
+              <div className="p-4 bg-background rounded-lg border space-y-3">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                    They call you
+                  </p>
+                  <p className="text-lg font-semibold text-primary">
+                    {claimData.relationship_card_json.invitee_label}
+                  </p>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="font-medium">You:</span>
-                  <span className="text-primary">{claimData.relationship_card_json.invitee_label}</span>
+                <div className="border-t pt-3 text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">
+                    You call them
+                  </p>
+                  <p className="text-lg font-semibold text-primary">
+                    {claimData.relationship_card_json.inviter_label}
+                  </p>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-3">
-                By accepting, you agree to this relationship declaration.
-              </p>
+              <div className="mt-4 p-3 bg-muted/50 rounded-lg">
+                <p className="text-xs text-muted-foreground">
+                  <strong>What this means:</strong> Accepting creates a visible relationship between you and {claimData?.inviter.handle || claimData?.inviter.email}. 
+                  This is a mutual acknowledgment of how you know each other — it does not grant access to your personal data.
+                </p>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -370,7 +381,7 @@ export default function Join() {
           </CardContent>
         </Card>
 
-        {/* Accept Button */}
+        {/* Accept Button - Clarified wording (OPN3.008-1) */}
         <Button 
           size="lg" 
           className="w-full"
@@ -382,11 +393,15 @@ export default function Join() {
           ) : (
             <CheckCircle2 className="h-4 w-4 mr-2" />
           )}
-          Accept & Create Relationship
+          {claimData?.relationship_card_json 
+            ? 'Accept Relationship' 
+            : 'Accept Invitation'}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          By accepting, you agree to share the specified CARDs with {claimData?.inviter.handle || claimData?.inviter.email}
+          {claimData?.relationship_card_json 
+            ? `By accepting, you confirm this relationship with ${claimData?.inviter.handle || claimData?.inviter.email}. No data is shared until you explicitly choose to share.`
+            : `By accepting, you create a connection with ${claimData?.inviter.handle || claimData?.inviter.email}.`}
         </p>
       </div>
     </div>

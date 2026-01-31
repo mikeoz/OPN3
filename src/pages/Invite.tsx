@@ -33,8 +33,7 @@ export default function Invite() {
   const [inviteeEmail, setInviteeEmail] = useState('');
   const [inviteeName, setInviteeName] = useState('');
   const [inviteePhone, setInviteePhone] = useState('');
-  const [inviteeOrg, setInviteeOrg] = useState('');
-  const [inviteeTitle, setInviteeTitle] = useState('');
+  // Removed: inviteeOrg, inviteeTitle - deferred per OPN3.008-1
   const [emailScenario, setEmailScenario] = useState<string>('');
   const [emailMessage, setEmailMessage] = useState('');
   const [generatedLink, setGeneratedLink] = useState<string>('');
@@ -91,6 +90,10 @@ export default function Invite() {
 
     setMembers((membersData || []) as Member[]);
     setScenarios((scenariosData || []) as SharingScenario[]);
+    // Auto-select first scenario for Alpha (sharing scenario is disabled)
+    if (scenariosData && scenariosData.length > 0) {
+      setEmailScenario(scenariosData[0].scenario_id);
+    }
     setLoading(false);
   };
 
@@ -181,8 +184,7 @@ export default function Invite() {
         name: inviteeName || '',
         email: inviteeEmail,
         phone: inviteePhone || undefined,
-        organization: inviteeOrg || undefined,
-        title: inviteeTitle || undefined,
+        // Removed org/title fields per OPN3.008-1
       };
 
       // Build relationship card if enabled (OPN3.008)
@@ -304,9 +306,7 @@ export default function Invite() {
     setInviteeEmail('');
     setInviteeName('');
     setInviteePhone('');
-    setInviteeOrg('');
-    setInviteeTitle('');
-    setEmailScenario('');
+    // emailScenario stays auto-selected
     setEmailMessage('');
     setGeneratedLink('');
     // Reset relationship CARD state (OPN3.008)
@@ -511,27 +511,17 @@ export default function Invite() {
               </Card>
             ) : (
               <div className="space-y-6">
-                {/* Step 1: Invitee Info */}
+                {/* Section 1: Personal Information (CARDs) */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-                      Invitee Information
+                      Personal Information
                     </CardTitle>
-                    <CardDescription>Enter the details of the person you're inviting</CardDescription>
+                    <CardDescription>Who are you inviting?</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid gap-4">
-                      <div className="grid gap-2">
-                        <Label htmlFor="email">Email *</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          placeholder="person@example.com"
-                          value={inviteeEmail}
-                          onChange={(e) => setInviteeEmail(e.target.value)}
-                        />
-                      </div>
                       <div className="grid gap-2">
                         <Label htmlFor="name">Name</Label>
                         <Input
@@ -541,25 +531,15 @@ export default function Invite() {
                           onChange={(e) => setInviteeName(e.target.value)}
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="grid gap-2">
-                          <Label htmlFor="org">Organization</Label>
-                          <Input
-                            id="org"
-                            placeholder="Acme Corp"
-                            value={inviteeOrg}
-                            onChange={(e) => setInviteeOrg(e.target.value)}
-                          />
-                        </div>
-                        <div className="grid gap-2">
-                          <Label htmlFor="title">Title</Label>
-                          <Input
-                            id="title"
-                            placeholder="Product Manager"
-                            value={inviteeTitle}
-                            onChange={(e) => setInviteeTitle(e.target.value)}
-                          />
-                        </div>
+                      <div className="grid gap-2">
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          placeholder="person@example.com"
+                          value={inviteeEmail}
+                          onChange={(e) => setInviteeEmail(e.target.value)}
+                        />
                       </div>
                       <div className="grid gap-2">
                         <Label htmlFor="phone">Phone</Label>
@@ -575,55 +555,7 @@ export default function Invite() {
                   </CardContent>
                 </Card>
 
-                {/* Step 2: Select Scenario */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-                      Select Sharing Scenario
-                    </CardTitle>
-                    <CardDescription>What would you like to share?</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid gap-3">
-                      {scenarios.map((scenario) => (
-                        <button
-                          key={scenario.scenario_id}
-                          type="button"
-                          onClick={() => setEmailScenario(scenario.scenario_id)}
-                          className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                            emailScenario === scenario.scenario_id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{scenario.title}</p>
-                              <p className="text-sm text-muted-foreground">{scenario.description}</p>
-                            </div>
-                            <ChevronRight className={`h-5 w-5 transition-transform ${
-                              emailScenario === scenario.scenario_id ? 'rotate-90 text-primary' : 'text-muted-foreground'
-                            }`} />
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-
-                    {emailScenarioData && (
-                      <div className="pt-4 border-t">
-                        <p className="text-sm font-medium mb-3">CARDs in this scenario:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {emailCards.map((card) => (
-                            <CardBadge key={card.card_id} card={card} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Step 3: Relationship CARD (OPN3.008) */}
+                {/* Section 2: Relationship (OPN3.008-1 - moved up) */}
                 <RelationshipCardForm
                   enabled={relationshipEnabled}
                   onEnabledChange={setRelationshipEnabled}
@@ -633,26 +565,39 @@ export default function Invite() {
                   onInviteeLabelChange={setInviteeRelLabel}
                   inviterName={member?.handle || 'You'}
                   inviteeName={inviteeName || 'Invitee'}
+                  stepNumber={2}
                 />
 
-                {/* Step 4: Optional Message */}
-                <Card>
+                {/* Section 3: Sharing Scenario - Visually disabled for Alpha */}
+                <Card className="opacity-50 pointer-events-none">
                   <CardHeader>
                     <CardTitle className="text-lg flex items-center gap-2">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">4</span>
-                      Add a Message
-                      <span className="text-xs font-normal text-muted-foreground">(optional)</span>
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-muted-foreground text-xs font-bold">3</span>
+                      Sharing Scenario
+                      <span className="text-xs font-normal text-muted-foreground ml-2 bg-muted px-2 py-0.5 rounded">Coming later</span>
                     </CardTitle>
+                    <CardDescription>What information will you share?</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <Textarea
-                      placeholder="Add a personal message to your invitation..."
-                      value={emailMessage}
-                      onChange={(e) => setEmailMessage(e.target.value)}
-                      maxLength={500}
-                      rows={3}
-                    />
-                    <p className="text-xs text-muted-foreground mt-2">{emailMessage.length}/500</p>
+                  <CardContent className="space-y-4">
+                    <div className="grid gap-3">
+                      {scenarios.slice(0, 1).map((scenario) => (
+                        <div
+                          key={scenario.scenario_id}
+                          className="w-full text-left p-4 rounded-lg border-2 border-primary bg-primary/5"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{scenario.title}</p>
+                              <p className="text-sm text-muted-foreground">{scenario.description}</p>
+                            </div>
+                            <ChevronRight className="h-5 w-5 rotate-90 text-primary" />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      In this Alpha version, all invitations use the default sharing scenario.
+                    </p>
                   </CardContent>
                 </Card>
 
