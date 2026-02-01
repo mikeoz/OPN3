@@ -311,9 +311,45 @@ Support re-sharing previously revoked CARDs, CARD versioning (update a value, re
 
 ---
 
+## Decision A-015: CARD lifecycle with supersession model
+
+**Context**  
+OPN3.011-0 implements CARD lifecycle primitives establishing identity as authoritative, versioned, and independent of trust sharing.
+
+**Alpha Choice**  
+CARDs use a supersession model for non-mutating edits:
+1. Editing a CARD creates a new instance and marks the original as superseded
+2. `superseded_by` and `superseded_at` columns track lineage
+3. `is_current` boolean enables efficient querying of active CARDs
+4. Labels (e.g., "Primary", "Work") can be changed without creating supersession
+5. Full lineage is preserved and readable via `tno_get_card_lineage()` RPC
+
+**Implementation**  
+- Added `superseded_by`, `superseded_at`, `is_current` to `tno_member_cards`
+- `tno_create_member_card()` explicitly creates new CARD instances
+- `tno_supersede_member_card()` creates new version, marks old as superseded
+- `tno_update_card_label()` changes label without supersession
+- `tno_get_card_lineage()` returns full version chain from original to current
+- Identity page at `/identity` provides UI for creation, supersession, label editing, and lineage viewing
+
+**Implication**  
+Identity data is immutable—edits create new versions. This enables:
+- Full audit trail of all identity changes
+- Point-in-time queries for shared CARD values
+- Clear provenance from original to current
+- No ambiguity about what data was shared at what time
+
+**MVP Transition**  
+Consider adding:
+- Automatic propagation options (notify recipients when CARD is superseded)
+- Consent flows for recipients to view updated versions
+- Archive/delete capabilities for superseded CARDs after retention period
+
+---
+
 ## How to Use This Document
 
-- Each new Alpha shortcut must be recorded as a new Decision (A-015, A-016, …)
+- Each new Alpha shortcut must be recorded as a new Decision (A-016, A-017, …)
 
 - Decisions are never deleted or rewritten
 
@@ -323,4 +359,4 @@ This document is part of the Opn3 system architecture.
 
 ---
 
-End of v0.1 + OPN3.010-4
+End of v0.1 + OPN3.011-0
