@@ -12,6 +12,7 @@ import Join from "./pages/Join";
 import RelationshipDetail from "./pages/RelationshipDetail";
 import ShareBack from "./pages/ShareBack";
 import Audit from "./pages/Audit";
+import Identity from "./pages/Identity";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -84,6 +85,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Audit />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/identity"
+        element={
+          <ProtectedRoute>
+            <Identity />
           </ProtectedRoute>
         }
       />

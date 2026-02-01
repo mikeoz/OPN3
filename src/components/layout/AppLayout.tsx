@@ -8,7 +8,8 @@ import {
   Inbox, 
   History, 
   LogOut,
-  Shield
+  Shield,
+  CreditCard
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ interface AppLayoutProps {
 
 const navItems = [
   { path: '/', label: 'Relationships', icon: Users, matchPaths: ['/', '/relationship'] },
+  { path: '/identity', label: 'Identity', icon: CreditCard, matchPaths: ['/identity'] },
   { path: '/invite', label: 'Invite', icon: Send, matchPaths: ['/invite'] },
   { path: '/inbox', label: 'Inbox', icon: Inbox, matchPaths: ['/inbox'] },
   { path: '/audit', label: 'Activity', icon: History, matchPaths: ['/audit'] },

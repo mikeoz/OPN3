@@ -451,8 +451,11 @@ export type Database = {
           catalog_card_id: string
           created_at: string
           id: string
+          is_current: boolean
           label: string | null
           member_id: string
+          superseded_at: string | null
+          superseded_by: string | null
           updated_at: string
         }
         Insert: {
@@ -460,8 +463,11 @@ export type Database = {
           catalog_card_id: string
           created_at?: string
           id?: string
+          is_current?: boolean
           label?: string | null
           member_id: string
+          superseded_at?: string | null
+          superseded_by?: string | null
           updated_at?: string
         }
         Update: {
@@ -469,8 +475,11 @@ export type Database = {
           catalog_card_id?: string
           created_at?: string
           id?: string
+          is_current?: boolean
           label?: string | null
           member_id?: string
+          superseded_at?: string | null
+          superseded_by?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -487,6 +496,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tno_members"
             referencedColumns: ["member_id"]
+          },
+          {
+            foreignKeyName: "tno_member_cards_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "tno_member_cards"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -873,6 +889,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      tno_create_member_card: {
+        Args: {
+          p_card_data: Json
+          p_catalog_card_key: string
+          p_label?: string
+        }
+        Returns: string
+      }
       tno_create_share_proposal: {
         Args: {
           p_member_card_ids: string[]
@@ -891,6 +915,19 @@ export type Database = {
         Args: { p_member_id: string }
         Returns: undefined
       }
+      tno_get_card_lineage: {
+        Args: { p_member_card_id: string }
+        Returns: {
+          card_data: Json
+          created_at: string
+          id: string
+          is_current: boolean
+          label: string
+          position_in_chain: number
+          superseded_at: string
+          superseded_by: string
+        }[]
+      }
       tno_get_member_identity: { Args: { p_member_id: string }; Returns: Json }
       tno_preview_invite: { Args: { p_token: string }; Returns: Json }
       tno_revoke_invite: {
@@ -899,6 +936,18 @@ export type Database = {
       }
       tno_revoke_shared_card: {
         Args: { p_card_id: string; p_proposal_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      tno_supersede_member_card: {
+        Args: {
+          p_member_card_id: string
+          p_new_card_data: Json
+          p_new_label?: string
+        }
+        Returns: string
+      }
+      tno_update_card_label: {
+        Args: { p_member_card_id: string; p_new_label: string }
         Returns: boolean
       }
       tno_update_member_card: {
